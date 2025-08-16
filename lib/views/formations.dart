@@ -12,6 +12,17 @@ class _FormationsPageState extends State<FormationsPage> {
   TextEditingController nomController = TextEditingController();
   TextEditingController dureeController = TextEditingController();
   TextEditingController formateurController = TextEditingController();
+  TextEditingController imageController = TextEditingController(); // 🔹 ajouté pour le champ image
+
+  @override
+  void dispose() {
+    // 🔹 Libérer les controllers
+    nomController.dispose();
+    dureeController.dispose();
+    formateurController.dispose();
+    imageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +34,7 @@ class _FormationsPageState extends State<FormationsPage> {
         children: [
           const SizedBox(height: 20),
 
+          // Titre de la page
           Text(
             "Formations",
             style: TextStyle(
@@ -34,13 +46,13 @@ class _FormationsPageState extends State<FormationsPage> {
 
           const SizedBox(height: 50),
 
-          // Barre de recherche + bouton
+          // Barre de recherche + bouton Ajouter formation
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               SizedBox(
                 width: 300,
-                height: 36, // hauteur totale réduite
+                height: 36,
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Rechercher une formation...',
@@ -54,79 +66,132 @@ class _FormationsPageState extends State<FormationsPage> {
                 ),
               ),
 
-              // 🔹 Bouton Ajouter Formation
               ElevatedButton.icon(
                 onPressed: () {
-                  // Afficher le popup pour ajouter une formation
+                  // Popup formulaire
                   showDialog(
                     context: context,
                     builder: (context) {
                       return AlertDialog(
                         backgroundColor: Colors.white,
                         title: const Text("Ajout de formation"),
-                         titleTextStyle: TextStyle(
-                            color: Colors.blueGrey[800], // couleur personnalisée
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                        titleTextStyle: TextStyle(
+                          color: Colors.blueGrey[800],
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10), // 🔹 border radius personnalisé
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         content: SizedBox(
                           width: 350,
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const SizedBox(height: 15),  
-                              TextField(
+                              const SizedBox(height: 15),
+
+                            SizedBox(
+                            height: 36,
+                            child: TextField(
                                 controller: nomController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Nom de la formation',
-                                  border: OutlineInputBorder(),
+                                decoration: InputDecoration(
+                                labelText: 'Titre de la formation',
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(20),
                                 ),
-                              ),
-                              const SizedBox(height: 10),
-                              TextField(
-                                controller: dureeController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Durée',
-                                  border: OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 15), 
                                 ),
+                                style: const TextStyle(fontSize: 12),
+                            ),
+                            ),
+                              const SizedBox(height: 20),
+
+                              // Champ pour importer une image plus joli
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Image de mise en avant",
+                                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[800]),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Row(
+                                    children: [
+                                      ElevatedButton.icon(
+                                        onPressed: () async {
+                                          // 🔹 Ici tu peux ouvrir un sélecteur de fichiers (image)
+                                          // Exemple avec `file_picker` ou `image_picker`
+                                        },
+                                        icon: const Icon(Icons.upload_file),
+                                        label: const Text("Choisir un fichier"),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF23468E),
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 7),
+                                      // Affichage du nom du fichier choisi
+                                      Expanded(
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            border: Border.all(color: Colors.grey),
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          child: Text(
+                                            imageController.text.isEmpty
+                                                ? "Aucun fichier sélectionné"
+                                                : imageController.text,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 20),
+
+                              // Description multi-lignes
                               TextField(
                                 controller: formateurController,
+                                maxLines: 5,
                                 decoration: const InputDecoration(
-                                  labelText: 'Formateur',
+                                  labelText: 'Descriptions',
                                   border: OutlineInputBorder(),
+                                  alignLabelWithHint: true,
                                 ),
                               ),
                             ],
                           ),
                         ),
+
                         actions: [
-                            TextButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                style: TextButton.styleFrom(
-                                backgroundColor: Colors.grey[300], // couleur de fond du bouton Annuler
-                                foregroundColor: Colors.black,     // couleur du texte
-                                ),
-                                child: const Text("Annuler"),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: TextButton.styleFrom(
+                              backgroundColor: Colors.grey[300],
+                              foregroundColor: Colors.black,
                             ),
-                            ElevatedButton(
-                                onPressed: () {
-                                print("Nom : ${nomController.text}");
-                                print("Durée : ${dureeController.text}");
-                                print("Formateur : ${formateurController.text}");
-                                Navigator.of(context).pop();
-                                },
-                                style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF23468E), // couleur de fond du bouton Ajouter
-                                foregroundColor: Colors.white,             // couleur du texte
-                                ),
-                                child: const Text("Ajouter"),
+                            child: const Text("Annuler"),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              // 🔹 Récupérer les valeurs et fermer
+                              print("Nom : ${nomController.text}");
+                              print("Durée : ${dureeController.text}");
+                              print("Formateur : ${formateurController.text}");
+                              print("Image : ${imageController.text}");
+                              Navigator.of(context).pop();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF23468E),
+                              foregroundColor: Colors.white,
                             ),
-                        ]
+                            child: const Text("Ajouter"),
+                          ),
+                        ],
                       );
                     },
                   );
@@ -143,7 +208,7 @@ class _FormationsPageState extends State<FormationsPage> {
             ],
           ),
 
-          const SizedBox(height: 60), // espace avant le tableau
+          const SizedBox(height: 60),
 
           // Tableau scrollable
           Expanded(
