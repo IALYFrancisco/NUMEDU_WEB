@@ -11,7 +11,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Dashboard',
+      title: 'Dashnoard',
       home: const HomePage(),
     );
   }
@@ -32,12 +32,30 @@ class HomePage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const DrawerHeader(
-                  child: Text(
-                    "Numédu",
-                    style: TextStyle(color: Colors.white, fontSize: 22),
+                // ✅ Header avec texte + logo
+                DrawerHeader(
+                  child: Row(
+                    children: [
+                      const Text(
+                        "Numédu",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      // 👉 Remplace par ton logo
+                      Image.asset(
+                        "assets/images/logo-de-numedu.png", // place ton logo dans /assets
+                        height: 40,
+                        width: 40,
+                      ),
+                    ],
                   ),
                 ),
+
+                // ✅ Liens du menu
                 ListTile(
                   leading: const Icon(Icons.home, color: Colors.white),
                   title: const Text("Accueil", style: TextStyle(color: Colors.white)),
