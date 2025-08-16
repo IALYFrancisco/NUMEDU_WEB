@@ -139,7 +139,7 @@ class _FormationsPageState extends State<FormationsPage> {
                                     children: [
                                       ElevatedButton.icon(
                                         onPressed: _pickImage,
-                                        icon: const Icon(Icons.upload_file),
+                                        icon: const Icon(Icons.upload_file, color: Colors.white),
                                         label: const Text("Choisir un fichier"),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: const Color(0xFF23468E),
