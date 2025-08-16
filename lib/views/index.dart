@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
+import 'formations.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  // 🟢 Page actuelle affichée
+  Widget currentPage = const Center(child: Text("Accueil", style: TextStyle(fontSize: 24)));
 
   @override
   Widget build(BuildContext context) {
@@ -11,53 +20,65 @@ class HomePage extends StatelessWidget {
           // ✅ Sidebar
           Container(
             width: 175,
-            color:  const Color(0xFF23468E),
+            color: const Color(0xFF23468E),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-              Container(
-                height: 80, // 🔽 ajuste la hauteur ici (par ex. 60, 80, 100…)
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    const Text(
-                      "Numédu",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
+                // Header
+                Container(
+                  height: 80,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      const Text(
+                        "Numédu",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Image.asset(
-                      "assets/images/logo-de-numedu.png",
-                      width: 30,
-                    ),
-                  ],
+                      const SizedBox(width: 10),
+                      Image.asset(
+                        "assets/images/logo-de-numedu.png",
+                        width: 30,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 75),
 
-              const SizedBox(height: 75),
-
+                // 🟢 Menus
                 ListTile(
                   leading: const Icon(Icons.home, color: Colors.white, size: 22),
                   title: const Text("Accueil", style: TextStyle(color: Colors.white, fontSize: 15)),
-                  onTap: () {},
+                  onTap: () {
+                    setState(() {
+                      currentPage = const Center(
+                        child: Text("Accueil", style: TextStyle(fontSize: 24)),
+                      );
+                    });
+                  },
                 ),
                 ListTile(
                   leading: const Icon(Icons.library_books, color: Colors.white, size: 22),
                   title: const Text("Formations", style: TextStyle(color: Colors.white, fontSize: 15)),
-                  onTap: () {},
+                  onTap: () {
+                    setState(() {
+                      currentPage = const FormationsPage(); // change le contenu
+                    });
+                  },
                 ),
                 ListTile(
                   leading: const Icon(Icons.settings, color: Colors.white, size: 22),
                   title: const Text("Paramètres", style: TextStyle(color: Colors.white, fontSize: 15)),
-                  onTap: () {},
-                ),
-                ListTile(
-                  leading: const Icon(Icons.logout, color: Colors.white, size: 22),
-                  title: const Text("Déconnexion", style: TextStyle(color: Colors.white, fontSize: 15)),
-                  onTap: () {},
+                  onTap: () {
+                    setState(() {
+                      currentPage = const Center(
+                        child: Text("Paramètres", style: TextStyle(fontSize: 24)),
+                      );
+                    });
+                  },
                 ),
               ],
             ),
@@ -66,13 +87,8 @@ class HomePage extends StatelessWidget {
           // ✅ Contenu principal
           Expanded(
             child: Container(
-              color: Colors.grey.shade100,
-              child: const Center(
-                child: Text(
-                  "Contenu principal ici",
-                  style: TextStyle(fontSize: 24),
-                ),
-              ),
+              color: Colors.white,
+              child: currentPage, // affichage dynamique
             ),
           ),
         ],
