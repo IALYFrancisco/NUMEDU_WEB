@@ -25,6 +25,7 @@ class _HomePageState extends State<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header
+                const SizedBox(height: 20), // 🔹 espace en haut
                 Container(
                   height: 80,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -41,7 +42,7 @@ class _HomePageState extends State<HomePage> {
                       const SizedBox(width: 10),
                       Image.asset(
                         "assets/images/logo-de-numedu.png",
-                        width: 30,
+                        width: 20,
                       ),
                     ],
                   ),
