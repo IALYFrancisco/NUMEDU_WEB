@@ -8,15 +8,13 @@ class FormationsPage extends StatefulWidget {
 }
 
 class _FormationsPageState extends State<FormationsPage> {
-  // Pour récupérer les valeurs saisies dans le formulaire
   TextEditingController nomController = TextEditingController();
   TextEditingController dureeController = TextEditingController();
   TextEditingController formateurController = TextEditingController();
-  TextEditingController imageController = TextEditingController(); // 🔹 ajouté pour le champ image
+  TextEditingController imageController = TextEditingController();
 
   @override
   void dispose() {
-    // 🔹 Libérer les controllers
     nomController.dispose();
     dureeController.dispose();
     formateurController.dispose();
@@ -34,7 +32,6 @@ class _FormationsPageState extends State<FormationsPage> {
         children: [
           const SizedBox(height: 20),
 
-          // Titre de la page
           Text(
             "Formations",
             style: TextStyle(
@@ -46,7 +43,6 @@ class _FormationsPageState extends State<FormationsPage> {
 
           const SizedBox(height: 50),
 
-          // Barre de recherche + bouton Ajouter formation
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -68,7 +64,6 @@ class _FormationsPageState extends State<FormationsPage> {
 
               ElevatedButton.icon(
                 onPressed: () {
-                  // Popup formulaire
                   showDialog(
                     context: context,
                     builder: (context) {
@@ -106,7 +101,6 @@ class _FormationsPageState extends State<FormationsPage> {
                             ),
                               const SizedBox(height: 20),
 
-                              // Champ pour importer une image plus joli
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -119,8 +113,6 @@ class _FormationsPageState extends State<FormationsPage> {
                                     children: [
                                       ElevatedButton.icon(
                                         onPressed: () async {
-                                          // 🔹 Ici tu peux ouvrir un sélecteur de fichiers (image)
-                                          // Exemple avec `file_picker` ou `image_picker`
                                         },
                                         icon: const Icon(Icons.upload_file),
                                         label: const Text("Choisir un fichier"),
@@ -131,7 +123,6 @@ class _FormationsPageState extends State<FormationsPage> {
                                         ),
                                       ),
                                       const SizedBox(width: 7),
-                                      // Affichage du nom du fichier choisi
                                       Expanded(
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -152,8 +143,6 @@ class _FormationsPageState extends State<FormationsPage> {
                                 ],
                               ),
                               const SizedBox(height: 20),
-
-                              // Description multi-lignes
                               TextField(
                                 controller: formateurController,
                                 maxLines: 5,
@@ -178,7 +167,6 @@ class _FormationsPageState extends State<FormationsPage> {
                           ),
                           ElevatedButton(
                             onPressed: () {
-                              // 🔹 Récupérer les valeurs et fermer
                               print("Nom : ${nomController.text}");
                               print("Durée : ${dureeController.text}");
                               print("Formateur : ${formateurController.text}");
@@ -209,8 +197,6 @@ class _FormationsPageState extends State<FormationsPage> {
           ),
 
           const SizedBox(height: 60),
-
-          // Tableau scrollable
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
