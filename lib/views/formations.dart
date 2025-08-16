@@ -99,14 +99,14 @@ class _FormationsPageState extends State<FormationsPage> {
                                 style: const TextStyle(fontSize: 12),
                             ),
                             ),
-                              const SizedBox(height: 20),
+                            const SizedBox(height: 30),
 
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     "Image de mise en avant",
-                                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[800]),
+                                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[800], fontSize: 12),
                                   ),
                                   const SizedBox(height: 3),
                                   Row(
@@ -142,15 +142,16 @@ class _FormationsPageState extends State<FormationsPage> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 20),
+                              const SizedBox(height: 30),
                               TextField(
                                 controller: formateurController,
-                                maxLines: 5,
+                                maxLines: 3,
                                 decoration: const InputDecoration(
                                   labelText: 'Descriptions',
                                   border: OutlineInputBorder(),
                                   alignLabelWithHint: true,
                                 ),
+                                style: const TextStyle(fontSize: 12),
                               ),
                             ],
                           ),
