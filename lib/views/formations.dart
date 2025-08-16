@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 class FormationsPage extends StatefulWidget {
@@ -13,6 +15,8 @@ class _FormationsPageState extends State<FormationsPage> {
   TextEditingController formateurController = TextEditingController();
   TextEditingController imageController = TextEditingController();
 
+  Uint8List? _imageBytes; // pour stocker le contenu de l’image
+
   @override
   void dispose() {
     nomController.dispose();
@@ -20,6 +24,21 @@ class _FormationsPageState extends State<FormationsPage> {
     formateurController.dispose();
     imageController.dispose();
     super.dispose();
+  }
+
+  // Fonction pour importer une image
+  Future<void> _pickImage() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png'],
+    );
+
+    if (result != null && result.files.single.bytes != null) {
+      setState(() {
+        imageController.text = result.files.single.name;
+        _imageBytes = result.files.single.bytes;
+      });
+    }
   }
 
   @override
@@ -43,6 +62,7 @@ class _FormationsPageState extends State<FormationsPage> {
 
           const SizedBox(height: 50),
 
+          // 🔹 Barre recherche + bouton Ajouter formation
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -85,35 +105,40 @@ class _FormationsPageState extends State<FormationsPage> {
                             children: [
                               const SizedBox(height: 15),
 
-                            SizedBox(
-                            height: 36,
-                            child: TextField(
-                                controller: nomController,
-                                decoration: InputDecoration(
-                                labelText: 'Titre de la formation',
-                                border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(20),
+                              // Champ titre de la formation
+                              SizedBox(
+                                height: 36,
+                                child: TextField(
+                                  controller: nomController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Titre de la formation',
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 15),
+                                  ),
+                                  style: const TextStyle(fontSize: 12),
                                 ),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 15), 
-                                ),
-                                style: const TextStyle(fontSize: 12),
-                            ),
-                            ),
-                            const SizedBox(height: 30),
+                              ),
+                              const SizedBox(height: 30),
 
+                              // Champ import d’image
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     "Image de mise en avant",
-                                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[800], fontSize: 12),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey[800],
+                                      fontSize: 12,
+                                    ),
                                   ),
                                   const SizedBox(height: 3),
                                   Row(
                                     children: [
                                       ElevatedButton.icon(
-                                        onPressed: () async {
-                                        },
+                                        onPressed: _pickImage,
                                         icon: const Icon(Icons.upload_file),
                                         label: const Text("Choisir un fichier"),
                                         style: ElevatedButton.styleFrom(
@@ -140,9 +165,25 @@ class _FormationsPageState extends State<FormationsPage> {
                                       ),
                                     ],
                                   ),
+
+                                  // 🔹 Aperçu de l’image sélectionnée
+                                  if (_imageBytes != null) ...[
+                                    const SizedBox(height: 10),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Image.memory(
+                                        _imageBytes!,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
+
                               const SizedBox(height: 30),
+
+                              // Champ description
                               TextField(
                                 controller: formateurController,
                                 maxLines: 3,
@@ -157,6 +198,7 @@ class _FormationsPageState extends State<FormationsPage> {
                           ),
                         ),
 
+                        // 🔹 Boutons actions
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(),
@@ -198,6 +240,8 @@ class _FormationsPageState extends State<FormationsPage> {
           ),
 
           const SizedBox(height: 60),
+
+          // 🔹 Tableau formations
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
