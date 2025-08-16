@@ -73,10 +73,11 @@ class _FormationsPageState extends State<FormationsPage> {
                             borderRadius: BorderRadius.circular(10), // 🔹 border radius personnalisé
                         ),
                         content: SizedBox(
-                          width: 300,
+                          width: 350,
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              const SizedBox(height: 15),  
                               TextField(
                                 controller: nomController,
                                 decoration: const InputDecoration(
