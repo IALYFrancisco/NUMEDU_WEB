@@ -28,34 +28,32 @@ class HomePage extends StatelessWidget {
           // ✅ Sidebar
           Container(
             width: 250,
-            color: Colors.blueGrey.shade900,
+            color:  const Color(0xFF23468E),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ✅ Header avec texte + logo
-                DrawerHeader(
-                  child: Row(
-                    children: [
-                      const Text(
-                        "Numédu",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
+              Container(
+                height: 80, // 🔽 ajuste la hauteur ici (par ex. 60, 80, 100…)
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    const Text(
+                      "Numédu",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(width: 10),
-                      // 👉 Remplace par ton logo
-                      Image.asset(
-                        "assets/images/logo-de-numedu.png", // place ton logo dans /assets
-                        height: 40,
-                        width: 40,
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 10),
+                    Image.asset(
+                      "assets/images/logo-de-numedu.png",
+                      width: 35,
+                    ),
+                  ],
                 ),
+              ),
 
-                // ✅ Liens du menu
                 ListTile(
                   leading: const Icon(Icons.home, color: Colors.white),
                   title: const Text("Accueil", style: TextStyle(color: Colors.white)),
