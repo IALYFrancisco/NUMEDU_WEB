@@ -22,7 +22,7 @@ class _FormationsPageState extends State<FormationsPage> {
   Uint8List? _imageBytes;
 
   // 🔧 Config API DRF (à adapter)
-  static const String _uploadApiUrl = 'https://YOUR_DRF_UPLOAD_URL';
+  static const String _uploadApiUrl = 'https://numedu.onrender.com/api/images/';
 
   @override
   void dispose() {
