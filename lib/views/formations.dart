@@ -13,10 +13,10 @@ class FormationsPage extends StatefulWidget {
 }
 
 class _FormationsPageState extends State<FormationsPage> {
-  // Controllers
   final TextEditingController nomController = TextEditingController();
-  final TextEditingController formateurController = TextEditingController(); // pour descriptions
+  final TextEditingController descriptionsController = TextEditingController();
   final TextEditingController imageController = TextEditingController();
+  final TextEditingController searchController = TextEditingController();
   Uint8List? _imageBytes;
 
   static const String _uploadApiUrl = 'https://numedu.onrender.com/api/images/';
@@ -24,19 +24,18 @@ class _FormationsPageState extends State<FormationsPage> {
   @override
   void dispose() {
     nomController.dispose();
-    formateurController.dispose();
+    descriptionsController.dispose();
     imageController.dispose();
+    searchController.dispose();
     super.dispose();
   }
 
-  // --- Sélection d'image ---
   Future<void> _pickImage() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['jpg', 'jpeg', 'png'],
       withData: true,
     );
-
     if (result != null && result.files.single.bytes != null) {
       setState(() {
         imageController.text = result.files.single.name;
@@ -45,7 +44,6 @@ class _FormationsPageState extends State<FormationsPage> {
     }
   }
 
-  // --- Upload image vers API ---
   Future<String?> _uploadImageToApi({
     required Uint8List bytes,
     required String filename,
@@ -69,10 +67,9 @@ class _FormationsPageState extends State<FormationsPage> {
     }
   }
 
-  // --- Soumission vers Firestore ---
   Future<void> _submitFormation(BuildContext context) async {
     final title = nomController.text.trim();
-    final descriptions = formateurController.text.trim();
+    final descriptions = descriptionsController.text.trim();
 
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -110,12 +107,12 @@ class _FormationsPageState extends State<FormationsPage> {
         'add_date': FieldValue.serverTimestamp(),
         'image': imageUrl,
         'formationModuleID': <String>[],
-        'publised': false,
+        'published': false,
       };
       await docRef.set(data);
 
       nomController.clear();
-      formateurController.clear();
+      descriptionsController.clear();
       imageController.clear();
       _imageBytes = null;
 
@@ -157,6 +154,7 @@ class _FormationsPageState extends State<FormationsPage> {
                 width: 300,
                 height: 36,
                 child: TextField(
+                  controller: searchController,
                   decoration: InputDecoration(
                     hintText: 'Rechercher une formation...',
                     prefixIcon: const Icon(Icons.search, size: 20),
@@ -166,6 +164,7 @@ class _FormationsPageState extends State<FormationsPage> {
                     contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 5),
                   ),
                   style: const TextStyle(fontSize: 14),
+                  onChanged: (_) => setState(() {}), // Rafraîchit le tableau
                 ),
               ),
               ElevatedButton.icon(
@@ -203,8 +202,18 @@ class _FormationsPageState extends State<FormationsPage> {
                                 style: const TextStyle(fontSize: 12),
                               ),
                             ),
-                            const SizedBox(height: 30),
-                            // Image
+                            const SizedBox(height: 15),
+                            TextField(
+                              controller: descriptionsController,
+                              maxLines: 3,
+                              decoration: const InputDecoration(
+                                labelText: 'Descriptions',
+                                border: OutlineInputBorder(),
+                                alignLabelWithHint: true,
+                              ),
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            const SizedBox(height: 15),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -262,18 +271,6 @@ class _FormationsPageState extends State<FormationsPage> {
                                 ],
                               ],
                             ),
-                            const SizedBox(height: 30),
-                            // Descriptions
-                            TextField(
-                              controller: formateurController,
-                              maxLines: 3,
-                              decoration: const InputDecoration(
-                                labelText: 'Descriptions',
-                                border: OutlineInputBorder(),
-                                alignLabelWithHint: true,
-                              ),
-                              style: const TextStyle(fontSize: 12),
-                            ),
                           ],
                         ),
                       ),
@@ -310,71 +307,93 @@ class _FormationsPageState extends State<FormationsPage> {
             ],
           ),
           const SizedBox(height: 60),
-          // Tableau statique
           Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.vertical,
-                child: DataTable(
-                  headingRowColor: MaterialStateProperty.all(const Color(0xFF23468E)),
-                  headingTextStyle: const TextStyle(color: Colors.white),
-                  columns: const [
-                    DataColumn(label: Text('ID')),
-                    DataColumn(label: Text('Nom')),
-                    DataColumn(label: Text('Durée')),
-                    DataColumn(label: Text('Statut')),
-                    DataColumn(label: Text('Formateur')),
-                    DataColumn(label: Text('Date début')),
-                    DataColumn(label: Text('Catégorie')),
-                    DataColumn(label: Text('Niveau')),
-                    DataColumn(label: Text('Langue')),
-                    DataColumn(label: Text('Participants')),
-                    DataColumn(label: Text('Commentaires')),
-                  ],
-                  rows: const [
-                    DataRow(cells: [
-                      DataCell(Text('1')),
-                      DataCell(Text('Flutter débutants')),
-                      DataCell(Text('4 semaines')),
-                      DataCell(Text('En cours')),
-                      DataCell(Text('Alice')),
-                      DataCell(Text('01/08/2025')),
-                      DataCell(Text('Développement')),
-                      DataCell(Text('Débutant')),
-                      DataCell(Text('FR')),
-                      DataCell(Text('20')),
-                      DataCell(Text('-')),
-                    ]),
-                    DataRow(cells: [
-                      DataCell(Text('2')),
-                      DataCell(Text('Django avancé')),
-                      DataCell(Text('6 semaines')),
-                      DataCell(Text('Terminé')),
-                      DataCell(Text('Bob')),
-                      DataCell(Text('15/07/2025')),
-                      DataCell(Text('Web')),
-                      DataCell(Text('Avancé')),
-                      DataCell(Text('EN')),
-                      DataCell(Text('15')),
-                      DataCell(Text('Bien reçu')),
-                    ]),
-                    DataRow(cells: [
-                      DataCell(Text('3')),
-                      DataCell(Text('React Web')),
-                      DataCell(Text('3 semaines')),
-                      DataCell(Text('En cours')),
-                      DataCell(Text('Charlie')),
-                      DataCell(Text('20/08/2025')),
-                      DataCell(Text('Web')),
-                      DataCell(Text('Intermédiaire')),
-                      DataCell(Text('EN')),
-                      DataCell(Text('25')),
-                      DataCell(Text('-')),
-                    ]),
-                  ],
-                ),
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('formations')
+                      .orderBy('add_date', descending: true)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final formations = snapshot.data!.docs.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final title = data['title']?.toString().toLowerCase() ?? '';
+                      final search = searchController.text.toLowerCase();
+                      return title.contains(search);
+                    }).toList();
+
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                        child: DataTable(
+                          headingRowColor: MaterialStateProperty.all(const Color(0xFF23468E)),
+                          headingTextStyle: const TextStyle(color: Colors.white),
+                          columns: const [
+                            DataColumn(label: Text('ID')),
+                            DataColumn(label: Text('Nom')),
+                            DataColumn(label: Text('Descriptions')),
+                            DataColumn(label: Text('Date ajout')),
+                            DataColumn(label: Text('Modules')),
+                            DataColumn(label: Text('Publié')),
+                          ],
+                          rows: formations.isNotEmpty
+                              ? formations.map((doc) {
+                                  final data = doc.data() as Map<String, dynamic>;
+                                  return DataRow(cells: [
+                                    DataCell(Text(data['formationID'] ?? '', overflow: TextOverflow.ellipsis)),
+                                    DataCell(
+                                      SizedBox(
+                                        width: 150, // largeur max de la colonne "Nom"
+                                        child: Text(
+                                          data['title'] ?? '',
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ),
+                                    DataCell(
+                                      SizedBox(
+                                        width: 250, // largeur max de la colonne "Descriptions"
+                                        child: Text(
+                                          data['descriptions'] ?? '',
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ),
+                                    DataCell(Text(
+                                      data['add_date'] != null
+                                          ? (data['add_date'] as Timestamp).toDate().toString().split(' ')[0]
+                                          : '',
+                                      overflow: TextOverflow.ellipsis,
+                                    )),
+                                    DataCell(
+                                      SizedBox(
+                                        width: 150,
+                                        child: Text(
+                                          (data['formationModuleID'] as List<dynamic>?)?.join(', ') ?? '-',
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ),
+                                    DataCell(Text(data['published'] == true ? 'Oui' : 'Non')),
+                                  ]);
+                                }).toList()
+                              : [
+                                  DataRow(
+                                    cells: List.generate(6, (index) => const DataCell(Text('-'))),
+                                  ),
+                                ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
             ),
           ),
         ],
