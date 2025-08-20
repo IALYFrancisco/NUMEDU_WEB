@@ -15,7 +15,7 @@ class _FormationsPageState extends State<FormationsPage> {
   TextEditingController formateurController = TextEditingController();
   TextEditingController imageController = TextEditingController();
 
-  Uint8List? _imageBytes; // pour stocker le contenu de l’image
+  Uint8List? _imageBytes;
 
   @override
   void dispose() {
@@ -26,7 +26,6 @@ class _FormationsPageState extends State<FormationsPage> {
     super.dispose();
   }
 
-  // Fonction pour importer une image
   Future<void> _pickImage() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -62,7 +61,6 @@ class _FormationsPageState extends State<FormationsPage> {
 
           const SizedBox(height: 50),
 
-          // 🔹 Barre recherche + bouton Ajouter formation
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -105,7 +103,6 @@ class _FormationsPageState extends State<FormationsPage> {
                             children: [
                               const SizedBox(height: 15),
 
-                              // Champ titre de la formation
                               SizedBox(
                                 height: 36,
                                 child: TextField(
@@ -122,7 +119,6 @@ class _FormationsPageState extends State<FormationsPage> {
                               ),
                               const SizedBox(height: 30),
 
-                              // Champ import d’image
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -166,7 +162,6 @@ class _FormationsPageState extends State<FormationsPage> {
                                     ],
                                   ),
 
-                                  // 🔹 Aperçu de l’image sélectionnée
                                   if (_imageBytes != null) ...[
                                     const SizedBox(height: 10),
                                     ClipRRect(
@@ -183,7 +178,6 @@ class _FormationsPageState extends State<FormationsPage> {
 
                               const SizedBox(height: 30),
 
-                              // Champ description
                               TextField(
                                 controller: formateurController,
                                 maxLines: 3,
@@ -198,7 +192,6 @@ class _FormationsPageState extends State<FormationsPage> {
                           ),
                         ),
 
-                        // 🔹 Boutons actions
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(),
@@ -241,7 +234,6 @@ class _FormationsPageState extends State<FormationsPage> {
 
           const SizedBox(height: 60),
 
-          // 🔹 Tableau formations
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,

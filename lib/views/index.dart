@@ -9,7 +9,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // 🟢 Page actuelle affichée
   Widget currentPage = const Center(child: Text("Accueil", style: TextStyle(fontSize: 24)));
 
   @override
@@ -17,15 +16,13 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: Row(
         children: [
-          // ✅ Sidebar
           Container(
             width: 175,
             color: const Color(0xFF23468E),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
-                const SizedBox(height: 20), // 🔹 espace en haut
+                const SizedBox(height: 20),
                 Container(
                   height: 80,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -49,7 +46,6 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 75),
 
-                // 🟢 Menus
                 ListTile(
                   leading: const Icon(Icons.home, color: Colors.white, size: 22),
                   title: const Text("Accueil", style: TextStyle(color: Colors.white, fontSize: 15)),
@@ -66,7 +62,7 @@ class _HomePageState extends State<HomePage> {
                   title: const Text("Formations", style: TextStyle(color: Colors.white, fontSize: 15)),
                   onTap: () {
                     setState(() {
-                      currentPage = const FormationsPage(); // change le contenu
+                      currentPage = const FormationsPage();
                     });
                   },
                 ),
@@ -85,11 +81,10 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          // ✅ Contenu principal
           Expanded(
             child: Container(
               color: Colors.white,
-              child: currentPage, // affichage dynamique
+              child: currentPage,
             ),
           ),
         ],
