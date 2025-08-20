@@ -338,7 +338,7 @@ class _FormationsPageState extends State<FormationsPage> {
                             DataColumn(label: Text('ID')),
                             DataColumn(label: Text('Nom')),
                             DataColumn(label: Text('Descriptions')),
-                            DataColumn(label: Text('Date ajout')),
+                            DataColumn(label: Text('Date d\'ajout')),
                             DataColumn(label: Text('Modules')),
                             DataColumn(label: Text('Publié')),
                           ],
@@ -372,15 +372,24 @@ class _FormationsPageState extends State<FormationsPage> {
                                       overflow: TextOverflow.ellipsis,
                                     )),
                                     DataCell(
-                                      SizedBox(
-                                        width: 150,
+                                      Text(
+                                        ((data['formationModuleID'] as List<dynamic>?)?.length ?? 0).toString(),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    DataCell(
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: (data['published'] as bool? ?? false) ? Colors.green : Colors.red,
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
                                         child: Text(
-                                          (data['formationModuleID'] as List<dynamic>?)?.join(', ') ?? '-',
-                                          overflow: TextOverflow.ellipsis,
+                                          (data['published'] as bool? ?? false) ? 'Publié' : 'Non publié',
+                                          style: const TextStyle(color: Colors.white, fontSize: 12),
                                         ),
                                       ),
                                     ),
-                                    DataCell(Text(data['published'] == true ? 'Oui' : 'Non')),
                                   ]);
                                 }).toList()
                               : [
