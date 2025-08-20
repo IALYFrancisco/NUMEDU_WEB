@@ -390,6 +390,34 @@ class _FormationsPageState extends State<FormationsPage> {
                                         ),
                                       ),
                                     ),
+                                    DataCell(
+                                      PopupMenuButton<String>(
+                                        onSelected: (value) {
+                                          if (value == 'modifier') {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Modifier action')),
+                                            );
+                                            // Ici tu peux ouvrir un formulaire de modification
+                                          } else if (value == 'supprimer') {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Supprimer action')),
+                                            );
+                                            // Ici tu peux appeler la fonction de suppression
+                                          }
+                                        },
+                                        itemBuilder: (context) => [
+                                          const PopupMenuItem(
+                                            value: 'modifier',
+                                            child: Text('Modifier'),
+                                          ),
+                                          const PopupMenuItem(
+                                            value: 'supprimer',
+                                            child: Text('Supprimer'),
+                                          ),
+                                        ],
+                                        child: const Icon(Icons.more_vert),
+                                      ),
+                                    ),
                                   ]);
                                 }).toList()
                               : [
