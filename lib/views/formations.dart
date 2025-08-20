@@ -1,6 +1,9 @@
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FormationsPage extends StatefulWidget {
   const FormationsPage({super.key});
@@ -10,12 +13,16 @@ class FormationsPage extends StatefulWidget {
 }
 
 class _FormationsPageState extends State<FormationsPage> {
-  TextEditingController nomController = TextEditingController();
-  TextEditingController dureeController = TextEditingController();
-  TextEditingController formateurController = TextEditingController();
-  TextEditingController imageController = TextEditingController();
+  // Controllers
+  final TextEditingController nomController = TextEditingController();          // -> title
+  final TextEditingController dureeController = TextEditingController();        // (pas utilisé ici mais conservé)
+  final TextEditingController formateurController = TextEditingController();    // -> descriptions
+  final TextEditingController imageController = TextEditingController();        // nom de fichier sélectionné
 
   Uint8List? _imageBytes;
+
+  // 🔧 Config API DRF (à adapter)
+  static const String _uploadApiUrl = 'https://YOUR_DRF_UPLOAD_URL';
 
   @override
   void dispose() {
@@ -26,10 +33,12 @@ class _FormationsPageState extends State<FormationsPage> {
     super.dispose();
   }
 
+  // --- Sélection d'image (uniquement JPG/PNG) ---
   Future<void> _pickImage() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['jpg', 'jpeg', 'png'],
+      withData: true, // important pour avoir bytes (web/mobile)
     );
 
     if (result != null && result.files.single.bytes != null) {
@@ -37,6 +46,114 @@ class _FormationsPageState extends State<FormationsPage> {
         imageController.text = result.files.single.name;
         _imageBytes = result.files.single.bytes;
       });
+    }
+  }
+
+  // --- Upload de l'image vers ton API DRF, retourne l'URL publique ---
+  Future<String?> _uploadImageToApi({
+    required Uint8List bytes,
+    required String filename,
+  }) async {
+    try {
+      final uri = Uri.parse(_uploadApiUrl);
+      final request = http.MultipartRequest('POST', uri);
+
+      // Champ du fichier (adapter le nom 'image' si ton API attend 'file' par ex.)
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'image', // <-- adapte à ton champ DRF
+          bytes,
+          filename: filename,
+        ),
+      );
+
+      final streamed = await request.send();
+      final body = await streamed.stream.bytesToString();
+
+      if (streamed.statusCode >= 200 && streamed.statusCode < 300) {
+        // On suppose que ton API renvoie un JSON avec l’URL, ex: {"url": "https://..."}
+        final json = jsonDecode(body) as Map<String, dynamic>;
+        return (json['url'] ?? json['image'] ?? json['file'])?.toString();
+      } else {
+        debugPrint('Upload échoué (${streamed.statusCode}): $body');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('Erreur upload: $e');
+      return null;
+    }
+  }
+
+  // --- Enregistrement Firestore avec les champs demandés ---
+  Future<void> _submitFormation(BuildContext context) async {
+    final title = nomController.text.trim();
+    final descriptions = formateurController.text.trim();
+
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Le titre est obligatoire.')),
+      );
+      return;
+    }
+
+    // Petit loader pendant l’upload + save
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    String imageUrl = '';
+
+    // 1) Upload image si fournie
+    if (_imageBytes != null && imageController.text.isNotEmpty) {
+      final url = await _uploadImageToApi(
+        bytes: _imageBytes!,
+        filename: imageController.text,
+      );
+      if (url == null || url.isEmpty) {
+        Navigator.of(context).pop(); // close loader
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Échec de l'upload de l'image.")),
+        );
+        return;
+      }
+      imageUrl = url;
+    }
+
+    // 2) Écrire dans Firestore
+    try {
+      final col = FirebaseFirestore.instance.collection('formations');
+      final docRef = col.doc(); // on génère l’ID nous-même
+
+      final data = {
+        'formationID': docRef.id,      // ✅ id formation généré
+        'title': title,                // ✅ du formulaire
+        'descriptions': descriptions,  // ✅ du formulaire
+        'add_date': FieldValue.serverTimestamp(), // ✅ date d’ajout serveur
+        'image': imageUrl,             // ✅ URL retournée par ton API DRF
+        'formationModuleID': <String>[], // ✅ liste vide au départ
+        'publised': false,             // ✅ false par défaut (orthographe demandée)
+      };
+
+      await docRef.set(data);
+
+      // Nettoyage
+      nomController.clear();
+      formateurController.clear();
+      imageController.clear();
+      _imageBytes = null;
+
+      Navigator.of(context).pop(); // close loader
+      Navigator.of(context).pop(); // close form dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Formation ajoutée avec succès.')),
+      );
+    } catch (e) {
+      Navigator.of(context).pop(); // close loader
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur Firestore: $e')),
+      );
     }
   }
 
@@ -50,7 +167,6 @@ class _FormationsPageState extends State<FormationsPage> {
         children: [
           const SizedBox(height: 20),
 
-          // Titre principal
           Text(
             "Formations",
             style: TextStyle(
@@ -62,7 +178,7 @@ class _FormationsPageState extends State<FormationsPage> {
 
           const SizedBox(height: 50),
 
-          // Barre de recherche + bouton
+          // Recherche + bouton Ajouter
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -105,7 +221,7 @@ class _FormationsPageState extends State<FormationsPage> {
                             children: [
                               const SizedBox(height: 15),
 
-                              // Champ titre
+                              // Titre de la formation (title)
                               SizedBox(
                                 height: 36,
                                 child: TextField(
@@ -120,6 +236,7 @@ class _FormationsPageState extends State<FormationsPage> {
                                   style: const TextStyle(fontSize: 12),
                                 ),
                               ),
+
                               const SizedBox(height: 30),
 
                               // Import image
@@ -184,7 +301,7 @@ class _FormationsPageState extends State<FormationsPage> {
 
                               const SizedBox(height: 30),
 
-                              // Champ description
+                              // Descriptions
                               TextField(
                                 controller: formateurController,
                                 maxLines: 3,
@@ -199,7 +316,6 @@ class _FormationsPageState extends State<FormationsPage> {
                           ),
                         ),
 
-                        // Boutons
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(),
@@ -210,13 +326,7 @@ class _FormationsPageState extends State<FormationsPage> {
                             child: const Text("Annuler"),
                           ),
                           ElevatedButton(
-                            onPressed: () {
-                              print("Nom : ${nomController.text}");
-                              print("Durée : ${dureeController.text}");
-                              print("Formateur : ${formateurController.text}");
-                              print("Image : ${imageController.text}");
-                              Navigator.of(context).pop();
-                            },
+                            onPressed: () => _submitFormation(context),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF23468E),
                               foregroundColor: Colors.white,
@@ -242,7 +352,7 @@ class _FormationsPageState extends State<FormationsPage> {
 
           const SizedBox(height: 60),
 
-          // Tableau des formations
+          // Tableau statique d’exemple (à remplacer par les données Firestore si besoin)
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -250,9 +360,7 @@ class _FormationsPageState extends State<FormationsPage> {
                 scrollDirection: Axis.vertical,
                 child: DataTable(
                   headingRowColor: MaterialStateProperty.all(const Color(0xFF23468E)),
-                  headingTextStyle: const TextStyle(
-                    color: Colors.white,
-                  ),
+                  headingTextStyle: const TextStyle(color: Colors.white),
                   columns: const [
                     DataColumn(label: Text('ID')),
                     DataColumn(label: Text('Nom')),
