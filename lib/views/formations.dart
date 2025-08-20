@@ -50,6 +50,7 @@ class _FormationsPageState extends State<FormationsPage> {
         children: [
           const SizedBox(height: 20),
 
+          // Titre principal
           Text(
             "Formations",
             style: TextStyle(
@@ -61,6 +62,7 @@ class _FormationsPageState extends State<FormationsPage> {
 
           const SizedBox(height: 50),
 
+          // Barre de recherche + bouton
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -103,6 +105,7 @@ class _FormationsPageState extends State<FormationsPage> {
                             children: [
                               const SizedBox(height: 15),
 
+                              // Champ titre
                               SizedBox(
                                 height: 36,
                                 child: TextField(
@@ -119,6 +122,7 @@ class _FormationsPageState extends State<FormationsPage> {
                               ),
                               const SizedBox(height: 30),
 
+                              // Import image
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -135,12 +139,13 @@ class _FormationsPageState extends State<FormationsPage> {
                                     children: [
                                       ElevatedButton.icon(
                                         onPressed: _pickImage,
-                                        icon: const Icon(Icons.upload_file, color: Colors.white),
+                                        icon: const Icon(Icons.upload_file, color: Colors.white, size: 18),
                                         label: const Text("Choisir un fichier"),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: const Color(0xFF23468E),
                                           foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                                          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                                          textStyle: const TextStyle(fontSize: 12),
                                         ),
                                       ),
                                       const SizedBox(width: 7),
@@ -156,6 +161,7 @@ class _FormationsPageState extends State<FormationsPage> {
                                                 ? "Aucun fichier sélectionné"
                                                 : imageController.text,
                                             overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(fontSize: 12),
                                           ),
                                         ),
                                       ),
@@ -178,6 +184,7 @@ class _FormationsPageState extends State<FormationsPage> {
 
                               const SizedBox(height: 30),
 
+                              // Champ description
                               TextField(
                                 controller: formateurController,
                                 maxLines: 3,
@@ -192,6 +199,7 @@ class _FormationsPageState extends State<FormationsPage> {
                           ),
                         ),
 
+                        // Boutons
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(),
@@ -234,6 +242,7 @@ class _FormationsPageState extends State<FormationsPage> {
 
           const SizedBox(height: 60),
 
+          // Tableau des formations
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
