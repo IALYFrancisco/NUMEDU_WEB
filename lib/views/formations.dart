@@ -320,7 +320,8 @@ class _FormationsPageState extends State<FormationsPage> {
                       return const Center(child: CircularProgressIndicator());
                     }
 
-                    final formations = snapshot.data!.docs.where((doc) {
+                    // Filtrer les formations selon la recherche
+                    final filteredFormations = snapshot.data!.docs.where((doc) {
                       final data = doc.data() as Map<String, dynamic>;
                       final title = data['title']?.toString().toLowerCase() ?? '';
                       final search = searchController.text.toLowerCase();
@@ -334,6 +335,7 @@ class _FormationsPageState extends State<FormationsPage> {
                         child: DataTable(
                           headingRowColor: MaterialStateProperty.all(const Color(0xFF23468E)),
                           headingTextStyle: const TextStyle(color: Colors.white),
+                          columnSpacing: 20,
                           columns: const [
                             DataColumn(label: Text('ID')),
                             DataColumn(label: Text('Nom')),
@@ -341,88 +343,69 @@ class _FormationsPageState extends State<FormationsPage> {
                             DataColumn(label: Text('Date d\'ajout')),
                             DataColumn(label: Text('Modules')),
                             DataColumn(label: Text('Publiée')),
+                            DataColumn(label: Text('Action')),
                           ],
-                          rows: formations.isNotEmpty
-                              ? formations.map((doc) {
+                          rows: filteredFormations.isNotEmpty
+                              ? filteredFormations.map((doc) {
                                   final data = doc.data() as Map<String, dynamic>;
                                   return DataRow(cells: [
                                     DataCell(Text(data['formationID'] ?? '', overflow: TextOverflow.ellipsis)),
-                                    DataCell(
-                                      SizedBox(
-                                        width: 150, // largeur max de la colonne "Nom"
-                                        child: Text(
-                                          data['title'] ?? '',
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ),
-                                    DataCell(
-                                      SizedBox(
-                                        width: 250, // largeur max de la colonne "Descriptions"
-                                        child: Text(
-                                          data['descriptions'] ?? '',
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ),
+                                    DataCell(SizedBox(
+                                      width: 150,
+                                      child: Text(data['title'] ?? '', overflow: TextOverflow.ellipsis),
+                                    )),
+                                    DataCell(SizedBox(
+                                      width: 250,
+                                      child: Text(data['descriptions'] ?? '', overflow: TextOverflow.ellipsis),
+                                    )),
                                     DataCell(Text(
                                       data['add_date'] != null
                                           ? (data['add_date'] as Timestamp).toDate().toString().split(' ')[0]
                                           : '',
                                       overflow: TextOverflow.ellipsis,
                                     )),
-                                    DataCell(
-                                      Text(
-                                        ((data['formationModuleID'] as List<dynamic>?)?.length ?? 0).toString(),
-                                        overflow: TextOverflow.ellipsis,
+                                    DataCell(Text(
+                                      ((data['formationModuleID'] as List<dynamic>?)?.length ?? 0).toString(),
+                                      overflow: TextOverflow.ellipsis,
+                                    )),
+                                    DataCell(Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: (data['published'] as bool? ?? false) ? Colors.green : Colors.red,
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
-                                    ),
-                                    DataCell(
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: (data['published'] as bool? ?? false) ? Colors.green : Colors.red,
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          (data['published'] as bool? ?? false) ? 'Publié' : 'Non publié',
-                                          style: const TextStyle(color: Colors.white, fontSize: 12),
-                                        ),
+                                      child: Text(
+                                        (data['published'] as bool? ?? false) ? 'Publié' : 'Non publié',
+                                        style: const TextStyle(color: Colors.white, fontSize: 12),
                                       ),
-                                    ),
+                                    )),
                                     DataCell(
-                                      PopupMenuButton<String>(
-                                        onSelected: (value) {
-                                          if (value == 'modifier') {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('Modifier action')),
-                                            );
-                                            // Ici tu peux ouvrir un formulaire de modification
-                                          } else if (value == 'supprimer') {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('Supprimer action')),
-                                            );
-                                            // Ici tu peux appeler la fonction de suppression
-                                          }
-                                        },
-                                        itemBuilder: (context) => [
-                                          const PopupMenuItem(
-                                            value: 'modifier',
-                                            child: Text('Modifier'),
-                                          ),
-                                          const PopupMenuItem(
-                                            value: 'supprimer',
-                                            child: Text('Supprimer'),
-                                          ),
-                                        ],
-                                        child: const Icon(Icons.more_vert),
+                                      Center(
+                                        child: PopupMenuButton<String>(
+                                          onSelected: (value) {
+                                            if (value == 'modifier') {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text('Modifier action')),
+                                              );
+                                            } else if (value == 'supprimer') {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text('Supprimer action')),
+                                              );
+                                            }
+                                          },
+                                          itemBuilder: (context) => const [
+                                            PopupMenuItem(value: 'modifier', child: Text('Modifier')),
+                                            PopupMenuItem(value: 'supprimer', child: Text('Supprimer')),
+                                          ],
+                                          child: const Icon(Icons.more_vert),
+                                        ),
                                       ),
                                     ),
                                   ]);
                                 }).toList()
                               : [
                                   DataRow(
-                                    cells: List.generate(6, (index) => const DataCell(Text('-'))),
+                                    cells: List.generate(7, (index) => const DataCell(Text('-'))),
                                   ),
                                 ],
                         ),
