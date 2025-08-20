@@ -340,7 +340,7 @@ class _FormationsPageState extends State<FormationsPage> {
                             DataColumn(label: Text('Descriptions')),
                             DataColumn(label: Text('Date d\'ajout')),
                             DataColumn(label: Text('Modules')),
-                            DataColumn(label: Text('Publié')),
+                            DataColumn(label: Text('Publiée')),
                           ],
                           rows: formations.isNotEmpty
                               ? formations.map((doc) {
