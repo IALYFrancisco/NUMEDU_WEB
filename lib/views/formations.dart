@@ -147,11 +147,11 @@ class _FormationsPageState extends State<FormationsPage> {
     }
   }
 
-  /// 🔥 Fonction pour compter les abonnés (userFormation)
+  /// 🔥 Fonction pour compter les abonnés (⚠️ userFormations au pluriel)
   Future<int> _getSubscribersCount(String formationId) async {
     try {
       final snapshot = await FirebaseFirestore.instance
-          .collection('userFormation')
+          .collection('userFormations') // ✅ correction ici
           .where('formationId', isEqualTo: formationId)
           .get();
       return snapshot.docs.length;
@@ -373,7 +373,7 @@ class _FormationsPageState extends State<FormationsPage> {
                             DataColumn(label: Text('Descriptions')),
                             DataColumn(label: Text('Date d\'ajout')),
                             DataColumn(label: Text('Modules')),
-                            DataColumn(label: Text('Abonnés')), // 👈 nouvelle colonne
+                            DataColumn(label: Text('Abonnés')), // ✅ colonne abonnés
                             DataColumn(label: Text('Publiée')),
                             DataColumn(label: Text('Action')),
                           ],
@@ -400,7 +400,7 @@ class _FormationsPageState extends State<FormationsPage> {
                                       ((data['formationModuleID'] as List<dynamic>?)?.length ?? 0).toString(),
                                       overflow: TextOverflow.ellipsis,
                                     )),
-                                    // 👇 nombre d'abonnés
+                                    // 👇 nombre d'abonnés via userFormations
                                     DataCell(
                                       FutureBuilder<int>(
                                         future: _getSubscribersCount(data['formationID']),
