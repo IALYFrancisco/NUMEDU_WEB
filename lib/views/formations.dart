@@ -147,11 +147,33 @@ class _FormationsPageState extends State<FormationsPage> {
     }
   }
 
+  /// 🔥 Fonction pour publier/dépublier une formation
+  Future<void> _togglePublish(String formationId, bool currentStatus) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('formations')
+          .doc(formationId)
+          .update({'published': !currentStatus});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(!currentStatus
+              ? 'Formation publiée avec succès.'
+              : 'Formation dépubliée.'),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors du changement de statut: $e')),
+      );
+    }
+  }
+
   /// 🔥 Fonction pour compter les abonnés (⚠️ userFormations au pluriel)
   Future<int> _getSubscribersCount(String formationId) async {
     try {
       final snapshot = await FirebaseFirestore.instance
-          .collection('userFormations') // ✅ correction ici
+          .collection('userFormations') // ✅ au pluriel
           .where('formationId', isEqualTo: formationId)
           .get();
       return snapshot.docs.length;
@@ -373,7 +395,7 @@ class _FormationsPageState extends State<FormationsPage> {
                             DataColumn(label: Text('Descriptions')),
                             DataColumn(label: Text('Date d\'ajout')),
                             DataColumn(label: Text('Modules')),
-                            DataColumn(label: Text('Abonnés')), // ✅ colonne abonnés
+                            DataColumn(label: Text('Abonnés')),
                             DataColumn(label: Text('Publiée')),
                             DataColumn(label: Text('Action')),
                           ],
@@ -400,7 +422,6 @@ class _FormationsPageState extends State<FormationsPage> {
                                       ((data['formationModuleID'] as List<dynamic>?)?.length ?? 0).toString(),
                                       overflow: TextOverflow.ellipsis,
                                     )),
-                                    // 👇 nombre d'abonnés via userFormations
                                     DataCell(
                                       FutureBuilder<int>(
                                         future: _getSubscribersCount(data['formationID']),
@@ -434,7 +455,7 @@ class _FormationsPageState extends State<FormationsPage> {
                                       Center(
                                         child: PopupMenuButton<String>(
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8), // coins légèrement arrondis
+                                            borderRadius: BorderRadius.circular(8),
                                           ),
                                           elevation: 4,
                                           onSelected: (value) {
@@ -468,30 +489,36 @@ class _FormationsPageState extends State<FormationsPage> {
                                                 ),
                                               );
                                             } else if (value == 'publier') {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(content: Text('Publier action')),
+                                              _togglePublish(
+                                                data['formationID'],
+                                                data['published'] as bool? ?? false,
                                               );
                                             }
                                           },
                                           itemBuilder: (context) => [
                                             const PopupMenuItem(
                                               value: 'modifier',
-                                              height: 32, // 🔥 réduit la hauteur
+                                              height: 32,
                                               child: Text("Modifier", style: TextStyle(fontSize: 14)),
                                             ),
                                             const PopupMenuItem(
                                               value: 'supprimer',
-                                              height: 32, // 🔥 réduit la hauteur
+                                              height: 32,
                                               child: Text("Supprimer", style: TextStyle(fontSize: 14)),
                                             ),
-                                            const PopupMenuItem(
+                                            PopupMenuItem(
                                               value: 'publier',
-                                              height: 32, // 🔥 réduit la hauteur
-                                              child: Text("Publier", style: TextStyle(fontSize: 14)),
+                                              height: 32,
+                                              child: Text(
+                                                (data['published'] as bool? ?? false)
+                                                    ? "Dépublier"
+                                                    : "Publier",
+                                                style: const TextStyle(fontSize: 14),
+                                              ),
                                             ),
                                           ],
                                           child: const Icon(Icons.more_vert),
-                                        )
+                                        ),
                                       ),
                                     ),
                                   ]);
