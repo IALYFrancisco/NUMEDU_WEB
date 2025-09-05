@@ -147,6 +147,20 @@ class _FormationsPageState extends State<FormationsPage> {
     }
   }
 
+  /// 🔥 Fonction pour compter les abonnés (userFormation)
+  Future<int> _getSubscribersCount(String formationId) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('userFormation')
+          .where('formationId', isEqualTo: formationId)
+          .get();
+      return snapshot.docs.length;
+    } catch (e) {
+      debugPrint("Erreur lors du comptage: $e");
+      return 0;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -359,6 +373,7 @@ class _FormationsPageState extends State<FormationsPage> {
                             DataColumn(label: Text('Descriptions')),
                             DataColumn(label: Text('Date d\'ajout')),
                             DataColumn(label: Text('Modules')),
+                            DataColumn(label: Text('Abonnés')), // 👈 nouvelle colonne
                             DataColumn(label: Text('Publiée')),
                             DataColumn(label: Text('Action')),
                           ],
@@ -385,6 +400,25 @@ class _FormationsPageState extends State<FormationsPage> {
                                       ((data['formationModuleID'] as List<dynamic>?)?.length ?? 0).toString(),
                                       overflow: TextOverflow.ellipsis,
                                     )),
+                                    // 👇 nombre d'abonnés
+                                    DataCell(
+                                      FutureBuilder<int>(
+                                        future: _getSubscribersCount(data['formationID']),
+                                        builder: (context, snapshot) {
+                                          if (snapshot.connectionState == ConnectionState.waiting) {
+                                            return const SizedBox(
+                                              width: 15,
+                                              height: 15,
+                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                            );
+                                          }
+                                          if (snapshot.hasError) {
+                                            return const Text("Erreur");
+                                          }
+                                          return Text(snapshot.data.toString());
+                                        },
+                                      ),
+                                    ),
                                     DataCell(Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
@@ -444,7 +478,7 @@ class _FormationsPageState extends State<FormationsPage> {
                                 }).toList()
                               : [
                                   DataRow(
-                                    cells: List.generate(7, (index) => const DataCell(Text('-'))),
+                                    cells: List.generate(8, (index) => const DataCell(Text('-'))),
                                   ),
                                 ],
                         ),
