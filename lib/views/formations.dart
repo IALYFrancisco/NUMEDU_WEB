@@ -129,6 +129,24 @@ class _FormationsPageState extends State<FormationsPage> {
     }
   }
 
+  /// 🔥 Fonction suppression avec Firestore
+  Future<void> _deleteFormation(String formationId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('formations')
+          .doc(formationId)
+          .delete();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Formation supprimée avec succès.')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la suppression: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -387,8 +405,30 @@ class _FormationsPageState extends State<FormationsPage> {
                                                 const SnackBar(content: Text('Modifier action')),
                                               );
                                             } else if (value == 'supprimer') {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(content: Text('Supprimer action')),
+                                              showDialog(
+                                                context: context,
+                                                builder: (context) => AlertDialog(
+                                                  title: const Text("Confirmation"),
+                                                  content: const Text(
+                                                      "Voulez-vous vraiment supprimer cette formation ?"),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () => Navigator.of(context).pop(),
+                                                      child: const Text("Annuler"),
+                                                    ),
+                                                    ElevatedButton(
+                                                      onPressed: () {
+                                                        Navigator.of(context).pop();
+                                                        _deleteFormation(data['formationID']);
+                                                      },
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor: Colors.red,
+                                                        foregroundColor: Colors.white,
+                                                      ),
+                                                      child: const Text("Supprimer"),
+                                                    ),
+                                                  ],
+                                                ),
                                               );
                                             }
                                           },
