@@ -116,8 +116,8 @@ class _FormationsPageState extends State<FormationsPage> {
       imageController.clear();
       _imageBytes = null;
 
-      Navigator.of(context).pop(); // loader
-      Navigator.of(context).pop(); // dialog
+      Navigator.of(context).pop();
+      Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Formation ajoutée avec succès.')),
       );
@@ -126,6 +126,60 @@ class _FormationsPageState extends State<FormationsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur Firestore: $e')),
       );
+    }
+  }
+
+  /// 🔥 Fonction suppression avec Firestore
+  Future<void> _deleteFormation(String formationId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('formations')
+          .doc(formationId)
+          .delete();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Formation supprimée avec succès.')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la suppression: $e')),
+      );
+    }
+  }
+
+  /// 🔥 Fonction pour publier/dépublier une formation
+  Future<void> _togglePublish(String formationId, bool currentStatus) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('formations')
+          .doc(formationId)
+          .update({'published': !currentStatus});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(!currentStatus
+              ? 'Formation publiée avec succès.'
+              : 'Formation dépubliée.'),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors du changement de statut: $e')),
+      );
+    }
+  }
+
+  /// 🔥 Fonction pour compter les abonnés (⚠️ userFormations au pluriel)
+  Future<int> _getSubscribersCount(String formationId) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('userFormations') // ✅ au pluriel
+          .where('formationId', isEqualTo: formationId)
+          .get();
+      return snapshot.docs.length;
+    } catch (e) {
+      debugPrint("Erreur lors du comptage: $e");
+      return 0;
     }
   }
 
@@ -164,7 +218,7 @@ class _FormationsPageState extends State<FormationsPage> {
                     contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 5),
                   ),
                   style: const TextStyle(fontSize: 14),
-                  onChanged: (_) => setState(() {}), // Rafraîchit le tableau
+                  onChanged: (_) => setState(() {}),
                 ),
               ),
               ElevatedButton.icon(
@@ -320,7 +374,6 @@ class _FormationsPageState extends State<FormationsPage> {
                       return const Center(child: CircularProgressIndicator());
                     }
 
-                    // Filtrer les formations selon la recherche
                     final filteredFormations = snapshot.data!.docs.where((doc) {
                       final data = doc.data() as Map<String, dynamic>;
                       final title = data['title']?.toString().toLowerCase() ?? '';
@@ -342,6 +395,7 @@ class _FormationsPageState extends State<FormationsPage> {
                             DataColumn(label: Text('Descriptions')),
                             DataColumn(label: Text('Date d\'ajout')),
                             DataColumn(label: Text('Modules')),
+                            DataColumn(label: Text('Abonnés')),
                             DataColumn(label: Text('Publiée')),
                             DataColumn(label: Text('Action')),
                           ],
@@ -368,6 +422,24 @@ class _FormationsPageState extends State<FormationsPage> {
                                       ((data['formationModuleID'] as List<dynamic>?)?.length ?? 0).toString(),
                                       overflow: TextOverflow.ellipsis,
                                     )),
+                                    DataCell(
+                                      FutureBuilder<int>(
+                                        future: _getSubscribersCount(data['formationID']),
+                                        builder: (context, snapshot) {
+                                          if (snapshot.connectionState == ConnectionState.waiting) {
+                                            return const SizedBox(
+                                              width: 15,
+                                              height: 15,
+                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                            );
+                                          }
+                                          if (snapshot.hasError) {
+                                            return const Text("Erreur");
+                                          }
+                                          return Text(snapshot.data.toString());
+                                        },
+                                      ),
+                                    ),
                                     DataCell(Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
@@ -375,27 +447,80 @@ class _FormationsPageState extends State<FormationsPage> {
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text(
-                                        (data['published'] as bool? ?? false) ? 'Publié' : 'Non publié',
+                                        (data['published'] as bool? ?? false) ? 'Publiée' : 'Non publiée',
                                         style: const TextStyle(color: Colors.white, fontSize: 12),
                                       ),
                                     )),
                                     DataCell(
                                       Center(
                                         child: PopupMenuButton<String>(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          elevation: 4,
                                           onSelected: (value) {
                                             if (value == 'modifier') {
                                               ScaffoldMessenger.of(context).showSnackBar(
                                                 const SnackBar(content: Text('Modifier action')),
                                               );
                                             } else if (value == 'supprimer') {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(content: Text('Supprimer action')),
+                                              showDialog(
+                                                context: context,
+                                                builder: (context) => AlertDialog(
+                                                  title: const Text("Confirmation"),
+                                                  content: const Text("Voulez-vous vraiment supprimer cette formation ?"),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () => Navigator.of(context).pop(),
+                                                      child: const Text("Annuler"),
+                                                    ),
+                                                    ElevatedButton(
+                                                      onPressed: () {
+                                                        Navigator.of(context).pop();
+                                                        _deleteFormation(data['formationID']);
+                                                      },
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor: Colors.red,
+                                                        foregroundColor: Colors.white,
+                                                      ),
+                                                      child: const Text("Supprimer"),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            } else if (value == 'publier') {
+                                              _togglePublish(
+                                                data['formationID'],
+                                                data['published'] as bool? ?? false,
                                               );
                                             }
                                           },
-                                          itemBuilder: (context) => const [
-                                            PopupMenuItem(value: 'modifier', child: Text('Modifier')),
-                                            PopupMenuItem(value: 'supprimer', child: Text('Supprimer')),
+                                          itemBuilder: (context) => [
+                                            const PopupMenuItem(
+                                              value: 'modifier',
+                                              height: 32,
+                                              child: Text("Modifier", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                                            ),
+                                            const PopupMenuItem(
+                                              value: 'supprimer',
+                                              height: 32,
+                                              child: Text("Supprimer", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                                            ),
+                                            PopupMenuItem(
+                                              value: 'publier',
+                                              height: 32,
+                                              child: Text(
+                                                (data['published'] as bool? ?? false)
+                                                    ? "Dépublier"
+                                                    : "Publier",
+                                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                              ),
+                                            ),
+                                            const PopupMenuItem(
+                                              value: 'ajouter_module',
+                                              height: 32,
+                                              child: Text("Ajouter un module", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                                            ),
                                           ],
                                           child: const Icon(Icons.more_vert),
                                         ),
@@ -405,7 +530,7 @@ class _FormationsPageState extends State<FormationsPage> {
                                 }).toList()
                               : [
                                   DataRow(
-                                    cells: List.generate(7, (index) => const DataCell(Text('-'))),
+                                    cells: List.generate(8, (index) => const DataCell(Text('-'))),
                                   ),
                                 ],
                         ),
