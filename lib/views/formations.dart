@@ -447,7 +447,7 @@ class _FormationsPageState extends State<FormationsPage> {
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text(
-                                        (data['published'] as bool? ?? false) ? 'Publié' : 'Non publié',
+                                        (data['published'] as bool? ?? false) ? 'Publiée' : 'Non publiée',
                                         style: const TextStyle(color: Colors.white, fontSize: 12),
                                       ),
                                     )),
@@ -499,12 +499,12 @@ class _FormationsPageState extends State<FormationsPage> {
                                             const PopupMenuItem(
                                               value: 'modifier',
                                               height: 32,
-                                              child: Text("Modifier", style: TextStyle(fontSize: 14)),
+                                              child: Text("Modifier", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                                             ),
                                             const PopupMenuItem(
                                               value: 'supprimer',
                                               height: 32,
-                                              child: Text("Supprimer", style: TextStyle(fontSize: 14)),
+                                              child: Text("Supprimer", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                                             ),
                                             PopupMenuItem(
                                               value: 'publier',
@@ -513,8 +513,13 @@ class _FormationsPageState extends State<FormationsPage> {
                                                 (data['published'] as bool? ?? false)
                                                     ? "Dépublier"
                                                     : "Publier",
-                                                style: const TextStyle(fontSize: 14),
+                                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                                               ),
+                                            ),
+                                            const PopupMenuItem(
+                                              value: 'ajouter_module',
+                                              height: 32,
+                                              child: Text("Ajouter un module", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                                             ),
                                           ],
                                           child: const Icon(Icons.more_vert),
