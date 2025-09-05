@@ -116,8 +116,8 @@ class _FormationsPageState extends State<FormationsPage> {
       imageController.clear();
       _imageBytes = null;
 
-      Navigator.of(context).pop(); // loader
-      Navigator.of(context).pop(); // dialog
+      Navigator.of(context).pop();
+      Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Formation ajoutée avec succès.')),
       );
@@ -164,7 +164,7 @@ class _FormationsPageState extends State<FormationsPage> {
                     contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 5),
                   ),
                   style: const TextStyle(fontSize: 14),
-                  onChanged: (_) => setState(() {}), // Rafraîchit le tableau
+                  onChanged: (_) => setState(() {}),
                 ),
               ),
               ElevatedButton.icon(
@@ -320,7 +320,6 @@ class _FormationsPageState extends State<FormationsPage> {
                       return const Center(child: CircularProgressIndicator());
                     }
 
-                    // Filtrer les formations selon la recherche
                     final filteredFormations = snapshot.data!.docs.where((doc) {
                       final data = doc.data() as Map<String, dynamic>;
                       final title = data['title']?.toString().toLowerCase() ?? '';

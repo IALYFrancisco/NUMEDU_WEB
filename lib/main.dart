@@ -6,10 +6,8 @@ import 'views/index.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Charger le fichier .env
   await dotenv.load(fileName: ".env");
 
-  // Initialiser Firebase avec les variables du .env
   await Firebase.initializeApp(
     options: FirebaseOptions(
       apiKey: dotenv.env['API_KEY']!,
