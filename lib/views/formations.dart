@@ -433,6 +433,10 @@ class _FormationsPageState extends State<FormationsPage> {
                                     DataCell(
                                       Center(
                                         child: PopupMenuButton<String>(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8), // coins légèrement arrondis
+                                          ),
+                                          elevation: 4,
                                           onSelected: (value) {
                                             if (value == 'modifier') {
                                               ScaffoldMessenger.of(context).showSnackBar(
@@ -443,8 +447,7 @@ class _FormationsPageState extends State<FormationsPage> {
                                                 context: context,
                                                 builder: (context) => AlertDialog(
                                                   title: const Text("Confirmation"),
-                                                  content: const Text(
-                                                      "Voulez-vous vraiment supprimer cette formation ?"),
+                                                  content: const Text("Voulez-vous vraiment supprimer cette formation ?"),
                                                   actions: [
                                                     TextButton(
                                                       onPressed: () => Navigator.of(context).pop(),
@@ -464,14 +467,31 @@ class _FormationsPageState extends State<FormationsPage> {
                                                   ],
                                                 ),
                                               );
+                                            } else if (value == 'publier') {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text('Publier action')),
+                                              );
                                             }
                                           },
-                                          itemBuilder: (context) => const [
-                                            PopupMenuItem(value: 'modifier', child: Text('Modifier')),
-                                            PopupMenuItem(value: 'supprimer', child: Text('Supprimer')),
+                                          itemBuilder: (context) => [
+                                            const PopupMenuItem(
+                                              value: 'modifier',
+                                              height: 32, // 🔥 réduit la hauteur
+                                              child: Text("Modifier", style: TextStyle(fontSize: 14)),
+                                            ),
+                                            const PopupMenuItem(
+                                              value: 'supprimer',
+                                              height: 32, // 🔥 réduit la hauteur
+                                              child: Text("Supprimer", style: TextStyle(fontSize: 14)),
+                                            ),
+                                            const PopupMenuItem(
+                                              value: 'publier',
+                                              height: 32, // 🔥 réduit la hauteur
+                                              child: Text("Publier", style: TextStyle(fontSize: 14)),
+                                            ),
                                           ],
                                           child: const Icon(Icons.more_vert),
-                                        ),
+                                        )
                                       ),
                                     ),
                                   ]);
