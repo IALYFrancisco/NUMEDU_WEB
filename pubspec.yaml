@@ -39,6 +39,7 @@ dependencies:
   cloud_firestore: ^5.0.0   # ou la dernière version compatible avec ton projet
   firebase_core: ^3.0.0
   flutter_dotenv: ^5.1.0
+  flutter_quill: ^6.2.1
 
 dev_dependencies:
   flutter_test:
