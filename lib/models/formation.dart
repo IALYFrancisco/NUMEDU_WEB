@@ -1,49 +1,55 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Formation {
-  final String formationId;           // Identifiant unique de la formation
-  final String title;                 // Titre de la formation
-  final String description;           // Description de la formation (texte long)
-  final DateTime addDate;             // Date d'ajout de la formation
-  final String image;                 // Image mise en avant
-  final List<String> formationModuleIds; // Liste des identifiants des modules
-  final bool published;               // Formation publiée ou non
-  final String introduction;          // Introduction de la formation
+  String formationId;
+  String title;
+  String description;
+  String introduction;
+  String image;
+  List<String> formationModuleIds;
+  bool published;
+  DateTime? addDate;
 
   Formation({
     required this.formationId,
     required this.title,
     required this.description,
-    required this.addDate,
+    required this.introduction,
     required this.image,
     required this.formationModuleIds,
     required this.published,
-    required this.introduction,
+    this.addDate,
   });
 
-  /// Convertir une Formation en JSON (ex: pour API ou Firebase)
+  /// Crée une instance Formation à partir d'un Map (Firestore)
+  factory Formation.fromJson(Map<String, dynamic> json) {
+    return Formation(
+      formationId: json['formationId'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      introduction: json['introduction'] ?? '',
+      image: json['image'] ?? '',
+      formationModuleIds: List<String>.from(json['formationModuleIds'] ?? []),
+      published: json['published'] ?? false,
+      addDate: json['addDate'] != null
+          ? (json['addDate'] is Timestamp
+              ? (json['addDate'] as Timestamp).toDate()
+              : DateTime.tryParse(json['addDate'].toString()))
+          : null,
+    );
+  }
+
+  /// Convertit l'instance Formation en Map pour Firestore
   Map<String, dynamic> toJson() {
     return {
       'formationId': formationId,
       'title': title,
       'description': description,
-      'addDate': addDate.toIso8601String(),
+      'introduction': introduction,
       'image': image,
       'formationModuleIds': formationModuleIds,
       'published': published,
-      'introduction': introduction,
+      'addDate': addDate != null ? Timestamp.fromDate(addDate!) : FieldValue.serverTimestamp(),
     };
-  }
-
-  /// Créer une Formation à partir d’un JSON
-  factory Formation.fromJson(Map<String, dynamic> json) {
-    return Formation(
-      formationId: json['formationId'],
-      title: json['title'],
-      description: json['description'],
-      addDate: DateTime.parse(json['addDate']),
-      image: json['image'],
-      formationModuleIds: List<String>.from(json['formationModuleIds']),
-      published: json['published'],
-      introduction: json['introduction'],
-    );
   }
 }

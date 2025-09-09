@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/formation_form.dart';
-import '../models/formation.dart'; // Assure-toi que ton modèle Formation est importé
+import '../models/formation.dart'; // <- Ton modèle
 
 class FormationsPage extends StatefulWidget {
   const FormationsPage({super.key});
@@ -17,7 +17,7 @@ class FormationsPage extends StatefulWidget {
 class _FormationsPageState extends State<FormationsPage> {
   final TextEditingController nomController = TextEditingController();
   final TextEditingController introductionController = TextEditingController();
-  final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController descriptionsController = TextEditingController();
   final TextEditingController imageController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
 
@@ -28,7 +28,7 @@ class _FormationsPageState extends State<FormationsPage> {
   void dispose() {
     nomController.dispose();
     introductionController.dispose();
-    descriptionController.dispose();
+    descriptionsController.dispose();
     imageController.dispose();
     searchController.dispose();
     super.dispose();
@@ -75,7 +75,7 @@ class _FormationsPageState extends State<FormationsPage> {
   Future<void> _submitFormation(BuildContext context) async {
     final title = nomController.text.trim();
     final introduction = introductionController.text.trim();
-    final description = descriptionController.text.trim();
+    final description = descriptionsController.text.trim();
 
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -109,18 +109,19 @@ class _FormationsPageState extends State<FormationsPage> {
       final formation = Formation(
         formationId: docRef.id,
         title: title,
-        introduction: introduction,
         description: description,
-        addDate: DateTime.now(),
+        addDate: DateTime.now(), // Firestore serverTimestamp sera utilisé à l'affichage
         image: imageUrl,
         formationModuleIds: [],
         published: false,
+        introduction: introduction,
       );
+
       await docRef.set(formation.toJson());
 
       nomController.clear();
       introductionController.clear();
-      descriptionController.clear();
+      descriptionsController.clear();
       imageController.clear();
       _imageBytes = null;
 
@@ -229,7 +230,7 @@ class _FormationsPageState extends State<FormationsPage> {
                     builder: (_) => FormationForm(
                       nomController: nomController,
                       introductionController: introductionController,
-                      descriptionsController: descriptionController,
+                      descriptionsController: descriptionsController,
                       imageController: imageController,
                       onPickImage: _pickImage,
                       onSubmit: _submitFormation,
@@ -262,12 +263,13 @@ class _FormationsPageState extends State<FormationsPage> {
                       return const Center(child: CircularProgressIndicator());
                     }
 
-                    final filteredFormations = snapshot.data!.docs.where((doc) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      final title = data['title']?.toString().toLowerCase() ?? '';
-                      final search = searchController.text.toLowerCase();
-                      return title.contains(search);
-                    }).toList();
+                    final filteredFormations = snapshot.data!.docs
+                        .map((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          return Formation.fromJson(data);
+                        })
+                        .where((f) => f.title.toLowerCase().contains(searchController.text.toLowerCase()))
+                        .toList();
 
                     return SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -280,7 +282,7 @@ class _FormationsPageState extends State<FormationsPage> {
                           columns: const [
                             DataColumn(label: Text('ID')),
                             DataColumn(label: Text('Nom')),
-                            DataColumn(label: Text('Description')),
+                            DataColumn(label: Text('Descriptions')),
                             DataColumn(label: Text('Date d\'ajout')),
                             DataColumn(label: Text('Modules')),
                             DataColumn(label: Text('Abonnés')),
@@ -288,19 +290,16 @@ class _FormationsPageState extends State<FormationsPage> {
                             DataColumn(label: Text('Action')),
                           ],
                           rows: filteredFormations.isNotEmpty
-                              ? filteredFormations.map((doc) {
-                                  final data = doc.data() as Map<String, dynamic>;
+                              ? filteredFormations.map((f) {
                                   return DataRow(
                                     cells: [
-                                      DataCell(Text(data['formationId'] ?? '', overflow: TextOverflow.ellipsis)),
-                                      DataCell(SizedBox(width: 150, child: Text(data['title'] ?? '', overflow: TextOverflow.ellipsis))),
-                                      DataCell(SizedBox(width: 250, child: Text(data['description'] ?? '', overflow: TextOverflow.ellipsis))),
-                                      DataCell(Text(data['addDate'] != null
-                                          ? (data['addDate'] as Timestamp).toDate().toString().split(' ')[0]
-                                          : '', overflow: TextOverflow.ellipsis)),
-                                      DataCell(Text(((data['formationModuleIds'] as List<dynamic>?)?.length ?? 0).toString())),
+                                      DataCell(Text(f.formationId, overflow: TextOverflow.ellipsis)),
+                                      DataCell(SizedBox(width: 150, child: Text(f.title, overflow: TextOverflow.ellipsis))),
+                                      DataCell(SizedBox(width: 250, child: Text(f.description, overflow: TextOverflow.ellipsis))),
+                                      DataCell(Text(f.addDate != null ? f.addDate.toLocal().toString().split(' ')[0] : '', overflow: TextOverflow.ellipsis)),
+                                      DataCell(Text(f.formationModuleIds.length.toString())),
                                       DataCell(FutureBuilder<int>(
-                                        future: _getSubscribersCount(data['formationId']),
+                                        future: _getSubscribersCount(f.formationId),
                                         builder: (context, snapshot) {
                                           if (snapshot.connectionState == ConnectionState.waiting) {
                                             return const SizedBox(
@@ -316,11 +315,11 @@ class _FormationsPageState extends State<FormationsPage> {
                                       DataCell(Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: (data['published'] as bool? ?? false) ? Colors.green : Colors.red,
+                                          color: f.published ? Colors.green : Colors.red,
                                           borderRadius: BorderRadius.circular(12),
                                         ),
                                         child: Text(
-                                          (data['published'] as bool? ?? false) ? 'Publiée' : 'Non publiée',
+                                          f.published ? 'Publiée' : 'Non publiée',
                                           style: const TextStyle(color: Colors.white, fontSize: 12),
                                         ),
                                       )),
@@ -345,7 +344,7 @@ class _FormationsPageState extends State<FormationsPage> {
                                                   ElevatedButton(
                                                     onPressed: () {
                                                       Navigator.of(context).pop();
-                                                      _deleteFormation(data['formationId']);
+                                                      _deleteFormation(f.formationId);
                                                     },
                                                     style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
                                                     child: const Text("Supprimer"),
@@ -354,7 +353,7 @@ class _FormationsPageState extends State<FormationsPage> {
                                               ),
                                             );
                                           } else if (value == 'publier') {
-                                            _togglePublish(data['formationId'], data['published'] as bool? ?? false);
+                                            _togglePublish(f.formationId, f.published);
                                           } else if (value == 'ajouter_module') {
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               const SnackBar(content: Text('Ajouter un module action')),
@@ -364,7 +363,7 @@ class _FormationsPageState extends State<FormationsPage> {
                                         itemBuilder: (context) => [
                                           const PopupMenuItem(value: 'modifier', height: 32, child: Text("Modifier", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
                                           const PopupMenuItem(value: 'supprimer', height: 32, child: Text("Supprimer", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
-                                          PopupMenuItem(value: 'publier', height: 32, child: Text((data['published'] as bool? ?? false) ? "Dépublier" : "Publier", style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                                          PopupMenuItem(value: 'publier', height: 32, child: Text(f.published ? "Dépublier" : "Publier", style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
                                           const PopupMenuItem(value: 'ajouter_module', height: 32, child: Text("Ajouter un module", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
                                         ],
                                         child: const Icon(Icons.more_vert),
