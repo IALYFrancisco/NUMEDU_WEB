@@ -4,6 +4,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../widgets/formation_form.dart';
+import '../widgets/module_form.dart';
+import '../models/formation.dart';
+import '../models/formation_module.dart'; // <-- Import du modèle module
 
 class FormationsPage extends StatefulWidget {
   const FormationsPage({super.key});
@@ -14,16 +18,18 @@ class FormationsPage extends StatefulWidget {
 
 class _FormationsPageState extends State<FormationsPage> {
   final TextEditingController nomController = TextEditingController();
+  final TextEditingController introductionController = TextEditingController();
   final TextEditingController descriptionsController = TextEditingController();
   final TextEditingController imageController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
-  Uint8List? _imageBytes;
 
+  Uint8List? _imageBytes;
   static const String _uploadApiUrl = 'https://numedu.onrender.com/api/images/';
 
   @override
   void dispose() {
     nomController.dispose();
+    introductionController.dispose();
     descriptionsController.dispose();
     imageController.dispose();
     searchController.dispose();
@@ -54,6 +60,7 @@ class _FormationsPageState extends State<FormationsPage> {
       request.files.add(http.MultipartFile.fromBytes('image', bytes, filename: filename));
       final streamed = await request.send();
       final body = await streamed.stream.bytesToString();
+
       if (streamed.statusCode >= 200 && streamed.statusCode < 300) {
         final json = jsonDecode(body) as Map<String, dynamic>;
         return (json['url'] ?? json['image'] ?? json['file'])?.toString();
@@ -69,7 +76,8 @@ class _FormationsPageState extends State<FormationsPage> {
 
   Future<void> _submitFormation(BuildContext context) async {
     final title = nomController.text.trim();
-    final descriptions = descriptionsController.text.trim();
+    final introduction = introductionController.text.trim();
+    final description = descriptionsController.text.trim();
 
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -100,24 +108,28 @@ class _FormationsPageState extends State<FormationsPage> {
     try {
       final col = FirebaseFirestore.instance.collection('formations');
       final docRef = col.doc();
-      final data = {
-        'formationID': docRef.id,
-        'title': title,
-        'descriptions': descriptions,
-        'add_date': FieldValue.serverTimestamp(),
-        'image': imageUrl,
-        'formationModuleID': <String>[],
-        'published': false,
-      };
-      await docRef.set(data);
+      final formation = Formation(
+        formationId: docRef.id,
+        title: title,
+        description: description,
+        addDate: DateTime.now(),
+        image: imageUrl,
+        formationModuleIds: [],
+        published: false,
+        introduction: introduction,
+      );
+
+      await docRef.set(formation.toJson());
 
       nomController.clear();
+      introductionController.clear();
       descriptionsController.clear();
       imageController.clear();
       _imageBytes = null;
 
       Navigator.of(context).pop();
       Navigator.of(context).pop();
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Formation ajoutée avec succès.')),
       );
@@ -129,14 +141,9 @@ class _FormationsPageState extends State<FormationsPage> {
     }
   }
 
-  /// 🔥 Fonction suppression avec Firestore
   Future<void> _deleteFormation(String formationId) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('formations')
-          .doc(formationId)
-          .delete();
-
+      await FirebaseFirestore.instance.collection('formations').doc(formationId).delete();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Formation supprimée avec succès.')),
       );
@@ -147,14 +154,12 @@ class _FormationsPageState extends State<FormationsPage> {
     }
   }
 
-  /// 🔥 Fonction pour publier/dépublier une formation
   Future<void> _togglePublish(String formationId, bool currentStatus) async {
     try {
       await FirebaseFirestore.instance
           .collection('formations')
           .doc(formationId)
           .update({'published': !currentStatus});
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(!currentStatus
@@ -169,11 +174,10 @@ class _FormationsPageState extends State<FormationsPage> {
     }
   }
 
-  /// 🔥 Fonction pour compter les abonnés (⚠️ userFormations au pluriel)
   Future<int> _getSubscribersCount(String formationId) async {
     try {
       final snapshot = await FirebaseFirestore.instance
-          .collection('userFormations') // ✅ au pluriel
+          .collection('userFormations')
           .where('formationId', isEqualTo: formationId)
           .get();
       return snapshot.docs.length;
@@ -213,9 +217,9 @@ class _FormationsPageState extends State<FormationsPage> {
                     hintText: 'Rechercher une formation...',
                     prefixIcon: const Icon(Icons.search, size: 20),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 5),
+                        borderRadius: BorderRadius.circular(20)),
+                    contentPadding:
+                        const EdgeInsets.symmetric(vertical: 0, horizontal: 5),
                   ),
                   style: const TextStyle(fontSize: 14),
                   onChanged: (_) => setState(() {}),
@@ -225,127 +229,14 @@ class _FormationsPageState extends State<FormationsPage> {
                 onPressed: () {
                   showDialog(
                     context: context,
-                    builder: (context) => AlertDialog(
-                      backgroundColor: Colors.white,
-                      title: const Text("Ajout de formation"),
-                      titleTextStyle: TextStyle(
-                        color: Colors.blueGrey[800],
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      content: SizedBox(
-                        width: 350,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const SizedBox(height: 15),
-                            SizedBox(
-                              height: 36,
-                              child: TextField(
-                                controller: nomController,
-                                decoration: InputDecoration(
-                                  labelText: 'Titre de la formation',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 15),
-                                ),
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                            ),
-                            const SizedBox(height: 15),
-                            TextField(
-                              controller: descriptionsController,
-                              maxLines: 3,
-                              decoration: const InputDecoration(
-                                labelText: 'Descriptions',
-                                border: OutlineInputBorder(),
-                                alignLabelWithHint: true,
-                              ),
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            const SizedBox(height: 15),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Image de mise en avant",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[800],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                Row(
-                                  children: [
-                                    ElevatedButton.icon(
-                                      onPressed: _pickImage,
-                                      icon: const Icon(Icons.upload_file, color: Colors.white, size: 18),
-                                      label: const Text("Choisir un fichier"),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF23468E),
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-                                        textStyle: const TextStyle(fontSize: 12),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 7),
-                                    Expanded(
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(color: Colors.grey),
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                        child: Text(
-                                          imageController.text.isEmpty
-                                              ? "Aucun fichier sélectionné"
-                                              : imageController.text,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(fontSize: 12),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                if (_imageBytes != null) ...[
-                                  const SizedBox(height: 10),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Image.memory(
-                                      _imageBytes!,
-                                      height: 100,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          style: TextButton.styleFrom(
-                            backgroundColor: Colors.grey[300],
-                            foregroundColor: Colors.black,
-                          ),
-                          child: const Text("Annuler"),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => _submitFormation(context),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF23468E),
-                            foregroundColor: Colors.white,
-                          ),
-                          child: const Text("Ajouter"),
-                        ),
-                      ],
+                    builder: (_) => FormationForm(
+                      nomController: nomController,
+                      introductionController: introductionController,
+                      descriptionsController: descriptionsController,
+                      imageController: imageController,
+                      onPickImage: _pickImage,
+                      onSubmit: _submitFormation,
+                      imageBytes: _imageBytes,
                     ),
                   );
                 },
@@ -367,19 +258,17 @@ class _FormationsPageState extends State<FormationsPage> {
                 return StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection('formations')
-                      .orderBy('add_date', descending: true)
+                      .orderBy('addDate', descending: true)
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
                       return const Center(child: CircularProgressIndicator());
                     }
 
-                    final filteredFormations = snapshot.data!.docs.where((doc) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      final title = data['title']?.toString().toLowerCase() ?? '';
-                      final search = searchController.text.toLowerCase();
-                      return title.contains(search);
-                    }).toList();
+                    final filteredFormations = snapshot.data!.docs
+                        .map((doc) => Formation.fromJson(doc.data() as Map<String, dynamic>))
+                        .where((f) => f.title.toLowerCase().contains(searchController.text.toLowerCase()))
+                        .toList();
 
                     return SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -400,31 +289,16 @@ class _FormationsPageState extends State<FormationsPage> {
                             DataColumn(label: Text('Action')),
                           ],
                           rows: filteredFormations.isNotEmpty
-                              ? filteredFormations.map((doc) {
-                                  final data = doc.data() as Map<String, dynamic>;
-                                  return DataRow(cells: [
-                                    DataCell(Text(data['formationID'] ?? '', overflow: TextOverflow.ellipsis)),
-                                    DataCell(SizedBox(
-                                      width: 150,
-                                      child: Text(data['title'] ?? '', overflow: TextOverflow.ellipsis),
-                                    )),
-                                    DataCell(SizedBox(
-                                      width: 250,
-                                      child: Text(data['descriptions'] ?? '', overflow: TextOverflow.ellipsis),
-                                    )),
-                                    DataCell(Text(
-                                      data['add_date'] != null
-                                          ? (data['add_date'] as Timestamp).toDate().toString().split(' ')[0]
-                                          : '',
-                                      overflow: TextOverflow.ellipsis,
-                                    )),
-                                    DataCell(Text(
-                                      ((data['formationModuleID'] as List<dynamic>?)?.length ?? 0).toString(),
-                                      overflow: TextOverflow.ellipsis,
-                                    )),
-                                    DataCell(
-                                      FutureBuilder<int>(
-                                        future: _getSubscribersCount(data['formationID']),
+                              ? filteredFormations.map((f) {
+                                  return DataRow(
+                                    cells: [
+                                      DataCell(Text(f.formationId, overflow: TextOverflow.ellipsis)),
+                                      DataCell(SizedBox(width: 150, child: Text(f.title, overflow: TextOverflow.ellipsis))),
+                                      DataCell(SizedBox(width: 250, child: Text(f.description, overflow: TextOverflow.ellipsis))),
+                                      DataCell(Text(f.addDate != null ? f.addDate!.toLocal().toString().split(' ')[0] : '', overflow: TextOverflow.ellipsis)),
+                                      DataCell(Text(f.formationModuleIds.length.toString())),
+                                      DataCell(FutureBuilder<int>(
+                                        future: _getSubscribersCount(f.formationId),
                                         builder: (context, snapshot) {
                                           if (snapshot.connectionState == ConnectionState.waiting) {
                                             return const SizedBox(
@@ -433,106 +307,74 @@ class _FormationsPageState extends State<FormationsPage> {
                                               child: CircularProgressIndicator(strokeWidth: 2),
                                             );
                                           }
-                                          if (snapshot.hasError) {
-                                            return const Text("Erreur");
-                                          }
+                                          if (snapshot.hasError) return const Text("Erreur");
                                           return Text(snapshot.data.toString());
                                         },
-                                      ),
-                                    ),
-                                    DataCell(Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: (data['published'] as bool? ?? false) ? Colors.green : Colors.red,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        (data['published'] as bool? ?? false) ? 'Publiée' : 'Non publiée',
-                                        style: const TextStyle(color: Colors.white, fontSize: 12),
-                                      ),
-                                    )),
-                                    DataCell(
-                                      Center(
-                                        child: PopupMenuButton<String>(
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          elevation: 4,
-                                          onSelected: (value) {
-                                            if (value == 'modifier') {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(content: Text('Modifier action')),
-                                              );
-                                            } else if (value == 'supprimer') {
-                                              showDialog(
-                                                context: context,
-                                                builder: (context) => AlertDialog(
-                                                  title: const Text("Confirmation"),
-                                                  content: const Text("Voulez-vous vraiment supprimer cette formation ?"),
-                                                  actions: [
-                                                    TextButton(
-                                                      onPressed: () => Navigator.of(context).pop(),
-                                                      child: const Text("Annuler"),
-                                                    ),
-                                                    ElevatedButton(
-                                                      onPressed: () {
-                                                        Navigator.of(context).pop();
-                                                        _deleteFormation(data['formationID']);
-                                                      },
-                                                      style: ElevatedButton.styleFrom(
-                                                        backgroundColor: Colors.red,
-                                                        foregroundColor: Colors.white,
-                                                      ),
-                                                      child: const Text("Supprimer"),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            } else if (value == 'publier') {
-                                              _togglePublish(
-                                                data['formationID'],
-                                                data['published'] as bool? ?? false,
-                                              );
-                                            }
-                                          },
-                                          itemBuilder: (context) => [
-                                            const PopupMenuItem(
-                                              value: 'modifier',
-                                              height: 32,
-                                              child: Text("Modifier", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                                            ),
-                                            const PopupMenuItem(
-                                              value: 'supprimer',
-                                              height: 32,
-                                              child: Text("Supprimer", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                                            ),
-                                            PopupMenuItem(
-                                              value: 'publier',
-                                              height: 32,
-                                              child: Text(
-                                                (data['published'] as bool? ?? false)
-                                                    ? "Dépublier"
-                                                    : "Publier",
-                                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                                              ),
-                                            ),
-                                            const PopupMenuItem(
-                                              value: 'ajouter_module',
-                                              height: 32,
-                                              child: Text("Ajouter un module", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                                            ),
-                                          ],
-                                          child: const Icon(Icons.more_vert),
+                                      )),
+                                      DataCell(Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: f.published ? Colors.green : Colors.red,
+                                          borderRadius: BorderRadius.circular(12),
                                         ),
-                                      ),
-                                    ),
-                                  ]);
+                                        child: Text(
+                                          f.published ? 'Publiée' : 'Non publiée',
+                                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                                        ),
+                                      )),
+                                      DataCell(PopupMenuButton<String>(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        elevation: 4,
+                                        onSelected: (value) {
+                                          if (value == 'modifier') {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Modifier action')),
+                                            );
+                                          } else if (value == 'supprimer') {
+                                            showDialog(
+                                              context: context,
+                                              builder: (context) => AlertDialog(
+                                                title: const Text("Confirmation"),
+                                                content: const Text("Voulez-vous vraiment supprimer cette formation ?"),
+                                                actions: [
+                                                  TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text("Annuler")),
+                                                  ElevatedButton(
+                                                    onPressed: () {
+                                                      Navigator.of(context).pop();
+                                                      _deleteFormation(f.formationId);
+                                                    },
+                                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                                                    child: const Text("Supprimer"),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          } else if (value == 'publier') {
+                                            _togglePublish(f.formationId, f.published);
+                                          } else if (value == 'ajouter_module') {
+                                            // **Affiche le formulaire module avec WYSIWYG**
+                                            showDialog(
+                                              context: context,
+                                              builder: (_) => ModuleForm(
+                                                formationId: f.formationId,
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        itemBuilder: (context) => [
+                                          const PopupMenuItem(value: 'modifier', height: 32, child: Text("Modifier", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                                          const PopupMenuItem(value: 'supprimer', height: 32, child: Text("Supprimer", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                                          PopupMenuItem(value: 'publier', height: 32, child: Text(f.published ? "Dépublier" : "Publier", style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                                          const PopupMenuItem(value: 'ajouter_module', height: 32, child: Text("Ajouter un module", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                                        ],
+                                        child: const Icon(Icons.more_vert),
+                                      )),
+                                    ],
+                                  );
                                 }).toList()
-                              : [
-                                  DataRow(
-                                    cells: List.generate(8, (index) => const DataCell(Text('-'))),
-                                  ),
-                                ],
+                              : [DataRow(cells: List.generate(8, (index) => const DataCell(Text('-'))))],
                         ),
                       ),
                     );
