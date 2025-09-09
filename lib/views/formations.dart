@@ -13,6 +13,7 @@ class FormationsPage extends StatefulWidget {
 
 class _FormationsPageState extends State<FormationsPage> {
   final TextEditingController nomController = TextEditingController();
+  final TextEditingController introductionController = TextEditingController(); // 🔥 Nouveau
   final TextEditingController descriptionsController = TextEditingController();
   final TextEditingController imageController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
@@ -22,6 +23,7 @@ class _FormationsPageState extends State<FormationsPage> {
   @override
   void dispose() {
     nomController.dispose();
+    introductionController.dispose(); // 🔥
     descriptionsController.dispose();
     imageController.dispose();
     searchController.dispose();
@@ -74,6 +76,7 @@ class _FormationsPageState extends State<FormationsPage> {
 
   Future<void> _submitFormation(BuildContext context) async {
     final title = nomController.text.trim();
+    final introduction = introductionController.text.trim(); // 🔥
     final descriptions = descriptionsController.text.trim();
 
     if (title.isEmpty) {
@@ -95,6 +98,7 @@ class _FormationsPageState extends State<FormationsPage> {
       final data = {
         'formationID': docRef.id,
         'title': title,
+        'introduction': introduction, // 🔥
         'descriptions': descriptions,
         'add_date': FieldValue.serverTimestamp(),
         'image': '',
@@ -104,6 +108,7 @@ class _FormationsPageState extends State<FormationsPage> {
       await docRef.set(data);
 
       nomController.clear();
+      introductionController.clear(); // 🔥
       descriptionsController.clear();
       imageController.clear();
       _imageBytes = null;
@@ -160,6 +165,7 @@ class _FormationsPageState extends State<FormationsPage> {
                     context: context,
                     builder: (_) => FormationForm(
                       nomController: nomController,
+                      introductionController: introductionController, // 🔥 Obligatoire
                       descriptionsController: descriptionsController,
                       imageController: imageController,
                       onPickImage: () async {},
@@ -303,9 +309,9 @@ class _FormationsPageState extends State<FormationsPage> {
                                               ),
                                             ),
                                             const PopupMenuItem(
-                                                height: 32,
-                                                child: Text("Ajouter un module", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                                              ),
+                                              height: 32,
+                                              child: Text("Ajouter un module", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                                            ),
                                           ],
                                           child: const Icon(Icons.more_vert),
                                         ),
