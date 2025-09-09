@@ -4,7 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../widgets/formation_form.dart'; // <-- Assurez-vous que le chemin est correct
+import '../widgets/formation_form.dart';
 
 class FormationsPage extends StatefulWidget {
   const FormationsPage({super.key});
@@ -21,7 +21,6 @@ class _FormationsPageState extends State<FormationsPage> {
   final TextEditingController searchController = TextEditingController();
 
   Uint8List? _imageBytes;
-
   static const String _uploadApiUrl = 'https://numedu.onrender.com/api/images/';
 
   @override
@@ -252,27 +251,28 @@ class _FormationsPageState extends State<FormationsPage> {
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                return SingleChildScrollView(
-                  child: SizedBox(
-                    width: constraints.maxWidth, // prend toute la largeur
-                    child: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('formations')
-                          .orderBy('add_date', descending: true)
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData) {
-                          return const Center(child: CircularProgressIndicator());
-                        }
+                return StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('formations')
+                      .orderBy('add_date', descending: true)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-                        final filteredFormations = snapshot.data!.docs.where((doc) {
-                          final data = doc.data() as Map<String, dynamic>;
-                          final title = data['title']?.toString().toLowerCase() ?? '';
-                          final search = searchController.text.toLowerCase();
-                          return title.contains(search);
-                        }).toList();
+                    final filteredFormations = snapshot.data!.docs.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final title = data['title']?.toString().toLowerCase() ?? '';
+                      final search = searchController.text.toLowerCase();
+                      return title.contains(search);
+                    }).toList();
 
-                        return DataTable(
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                        child: DataTable(
                           headingRowColor: MaterialStateProperty.all(const Color(0xFF23468E)),
                           headingTextStyle: const TextStyle(color: Colors.white),
                           columnSpacing: 20,
@@ -324,6 +324,10 @@ class _FormationsPageState extends State<FormationsPage> {
                                         ),
                                       )),
                                       DataCell(PopupMenuButton<String>(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        elevation: 4,
                                         onSelected: (value) {
                                           if (value == 'modifier') {
                                             ScaffoldMessenger.of(context).showSnackBar(
@@ -350,12 +354,17 @@ class _FormationsPageState extends State<FormationsPage> {
                                             );
                                           } else if (value == 'publier') {
                                             _togglePublish(data['formationID'], data['published'] as bool? ?? false);
+                                          } else if (value == 'ajouter_module') {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Ajouter un module action')),
+                                            );
                                           }
                                         },
                                         itemBuilder: (context) => [
-                                          const PopupMenuItem(value: 'modifier', child: Text("Modifier")),
-                                          const PopupMenuItem(value: 'supprimer', child: Text("Supprimer")),
-                                          PopupMenuItem(value: 'publier', child: Text((data['published'] as bool? ?? false) ? "Dépublier" : "Publier")),
+                                          const PopupMenuItem(value: 'modifier', height: 32, child: Text("Modifier", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                                          const PopupMenuItem(value: 'supprimer', height: 32, child: Text("Supprimer", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                                          PopupMenuItem(value: 'publier', height: 32, child: Text((data['published'] as bool? ?? false) ? "Dépublier" : "Publier", style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                                          const PopupMenuItem(value: 'ajouter_module', height: 32, child: Text("Ajouter un module", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
                                         ],
                                         child: const Icon(Icons.more_vert),
                                       )),
@@ -363,10 +372,10 @@ class _FormationsPageState extends State<FormationsPage> {
                                   );
                                 }).toList()
                               : [DataRow(cells: List.generate(8, (index) => const DataCell(Text('-'))))],
-                        );
-                      },
-                    ),
-                  ),
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             ),
