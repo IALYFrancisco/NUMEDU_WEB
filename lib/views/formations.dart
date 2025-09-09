@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/formation_form.dart';
+import '../models/formation.dart'; // Assure-toi que ton modèle Formation est importé
 
 class FormationsPage extends StatefulWidget {
   const FormationsPage({super.key});
@@ -16,7 +17,7 @@ class FormationsPage extends StatefulWidget {
 class _FormationsPageState extends State<FormationsPage> {
   final TextEditingController nomController = TextEditingController();
   final TextEditingController introductionController = TextEditingController();
-  final TextEditingController descriptionsController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
   final TextEditingController imageController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
 
@@ -27,7 +28,7 @@ class _FormationsPageState extends State<FormationsPage> {
   void dispose() {
     nomController.dispose();
     introductionController.dispose();
-    descriptionsController.dispose();
+    descriptionController.dispose();
     imageController.dispose();
     searchController.dispose();
     super.dispose();
@@ -74,7 +75,7 @@ class _FormationsPageState extends State<FormationsPage> {
   Future<void> _submitFormation(BuildContext context) async {
     final title = nomController.text.trim();
     final introduction = introductionController.text.trim();
-    final descriptions = descriptionsController.text.trim();
+    final description = descriptionController.text.trim();
 
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -105,21 +106,21 @@ class _FormationsPageState extends State<FormationsPage> {
     try {
       final col = FirebaseFirestore.instance.collection('formations');
       final docRef = col.doc();
-      final data = {
-        'formationID': docRef.id,
-        'title': title,
-        'introduction': introduction,
-        'descriptions': descriptions,
-        'add_date': FieldValue.serverTimestamp(),
-        'image': imageUrl,
-        'formationModuleID': <String>[],
-        'published': false,
-      };
-      await docRef.set(data);
+      final formation = Formation(
+        formationId: docRef.id,
+        title: title,
+        introduction: introduction,
+        description: description,
+        addDate: DateTime.now(),
+        image: imageUrl,
+        formationModuleIds: [],
+        published: false,
+      );
+      await docRef.set(formation.toJson());
 
       nomController.clear();
       introductionController.clear();
-      descriptionsController.clear();
+      descriptionController.clear();
       imageController.clear();
       _imageBytes = null;
 
@@ -228,7 +229,7 @@ class _FormationsPageState extends State<FormationsPage> {
                     builder: (_) => FormationForm(
                       nomController: nomController,
                       introductionController: introductionController,
-                      descriptionsController: descriptionsController,
+                      descriptionsController: descriptionController,
                       imageController: imageController,
                       onPickImage: _pickImage,
                       onSubmit: _submitFormation,
@@ -254,7 +255,7 @@ class _FormationsPageState extends State<FormationsPage> {
                 return StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection('formations')
-                      .orderBy('add_date', descending: true)
+                      .orderBy('addDate', descending: true)
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
@@ -279,7 +280,7 @@ class _FormationsPageState extends State<FormationsPage> {
                           columns: const [
                             DataColumn(label: Text('ID')),
                             DataColumn(label: Text('Nom')),
-                            DataColumn(label: Text('Descriptions')),
+                            DataColumn(label: Text('Description')),
                             DataColumn(label: Text('Date d\'ajout')),
                             DataColumn(label: Text('Modules')),
                             DataColumn(label: Text('Abonnés')),
@@ -291,15 +292,15 @@ class _FormationsPageState extends State<FormationsPage> {
                                   final data = doc.data() as Map<String, dynamic>;
                                   return DataRow(
                                     cells: [
-                                      DataCell(Text(data['formationID'] ?? '', overflow: TextOverflow.ellipsis)),
+                                      DataCell(Text(data['formationId'] ?? '', overflow: TextOverflow.ellipsis)),
                                       DataCell(SizedBox(width: 150, child: Text(data['title'] ?? '', overflow: TextOverflow.ellipsis))),
-                                      DataCell(SizedBox(width: 250, child: Text(data['descriptions'] ?? '', overflow: TextOverflow.ellipsis))),
-                                      DataCell(Text(data['add_date'] != null
-                                          ? (data['add_date'] as Timestamp).toDate().toString().split(' ')[0]
+                                      DataCell(SizedBox(width: 250, child: Text(data['description'] ?? '', overflow: TextOverflow.ellipsis))),
+                                      DataCell(Text(data['addDate'] != null
+                                          ? (data['addDate'] as Timestamp).toDate().toString().split(' ')[0]
                                           : '', overflow: TextOverflow.ellipsis)),
-                                      DataCell(Text(((data['formationModuleID'] as List<dynamic>?)?.length ?? 0).toString())),
+                                      DataCell(Text(((data['formationModuleIds'] as List<dynamic>?)?.length ?? 0).toString())),
                                       DataCell(FutureBuilder<int>(
-                                        future: _getSubscribersCount(data['formationID']),
+                                        future: _getSubscribersCount(data['formationId']),
                                         builder: (context, snapshot) {
                                           if (snapshot.connectionState == ConnectionState.waiting) {
                                             return const SizedBox(
@@ -344,7 +345,7 @@ class _FormationsPageState extends State<FormationsPage> {
                                                   ElevatedButton(
                                                     onPressed: () {
                                                       Navigator.of(context).pop();
-                                                      _deleteFormation(data['formationID']);
+                                                      _deleteFormation(data['formationId']);
                                                     },
                                                     style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
                                                     child: const Text("Supprimer"),
@@ -353,7 +354,7 @@ class _FormationsPageState extends State<FormationsPage> {
                                               ),
                                             );
                                           } else if (value == 'publier') {
-                                            _togglePublish(data['formationID'], data['published'] as bool? ?? false);
+                                            _togglePublish(data['formationId'], data['published'] as bool? ?? false);
                                           } else if (value == 'ajouter_module') {
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               const SnackBar(content: Text('Ajouter un module action')),
