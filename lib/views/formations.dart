@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/formation_form.dart';
+import '../widgets/module_form.dart';
 import '../models/formation.dart';
+import '../models/formation_module.dart'; // <-- Import du modèle module
 
 class FormationsPage extends StatefulWidget {
   const FormationsPage({super.key});
@@ -352,8 +354,12 @@ class _FormationsPageState extends State<FormationsPage> {
                                           } else if (value == 'publier') {
                                             _togglePublish(f.formationId, f.published);
                                           } else if (value == 'ajouter_module') {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('Ajouter un module action')),
+                                            // **Affiche le formulaire module avec WYSIWYG**
+                                            showDialog(
+                                              context: context,
+                                              builder: (_) => ModuleForm(
+                                                formationId: f.formationId,
+                                              ),
                                             );
                                           }
                                         },
