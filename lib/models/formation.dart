@@ -49,7 +49,7 @@ class Formation {
       'image': image,
       'formationModuleIds': formationModuleIds,
       'published': published,
-      'addDate': addDate != null ? Timestamp.fromDate(addDate!) : FieldValue.serverTimestamp(),
+      'addDate': FieldValue.serverTimestamp(), // Firestore gère la date
     };
   }
 }

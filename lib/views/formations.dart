@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/formation_form.dart';
-import '../models/formation.dart'; // <- Ton modèle
+import '../models/formation.dart';
 
 class FormationsPage extends StatefulWidget {
   const FormationsPage({super.key});
@@ -110,7 +110,7 @@ class _FormationsPageState extends State<FormationsPage> {
         formationId: docRef.id,
         title: title,
         description: description,
-        addDate: DateTime.now(), // Firestore serverTimestamp sera utilisé à l'affichage
+        addDate: DateTime.now(),
         image: imageUrl,
         formationModuleIds: [],
         published: false,
@@ -264,10 +264,7 @@ class _FormationsPageState extends State<FormationsPage> {
                     }
 
                     final filteredFormations = snapshot.data!.docs
-                        .map((doc) {
-                          final data = doc.data() as Map<String, dynamic>;
-                          return Formation.fromJson(data);
-                        })
+                        .map((doc) => Formation.fromJson(doc.data() as Map<String, dynamic>))
                         .where((f) => f.title.toLowerCase().contains(searchController.text.toLowerCase()))
                         .toList();
 
@@ -296,7 +293,7 @@ class _FormationsPageState extends State<FormationsPage> {
                                       DataCell(Text(f.formationId, overflow: TextOverflow.ellipsis)),
                                       DataCell(SizedBox(width: 150, child: Text(f.title, overflow: TextOverflow.ellipsis))),
                                       DataCell(SizedBox(width: 250, child: Text(f.description, overflow: TextOverflow.ellipsis))),
-                                      DataCell(Text(f.addDate != null ? f.addDate.toLocal().toString().split(' ')[0] : '', overflow: TextOverflow.ellipsis)),
+                                      DataCell(Text(f.addDate != null ? f.addDate!.toLocal().toString().split(' ')[0] : '', overflow: TextOverflow.ellipsis)),
                                       DataCell(Text(f.formationModuleIds.length.toString())),
                                       DataCell(FutureBuilder<int>(
                                         future: _getSubscribersCount(f.formationId),
