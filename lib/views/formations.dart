@@ -1,8 +1,10 @@
 import 'dart:typed_data';
+import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/formation.dart';
-import '../widgets/formation_form.dart';
+import '../widgets/formation_form.dart'; // <-- Assurez-vous que le chemin est correct
 
 class FormationsPage extends StatefulWidget {
   const FormationsPage({super.key});
@@ -13,21 +15,127 @@ class FormationsPage extends StatefulWidget {
 
 class _FormationsPageState extends State<FormationsPage> {
   final TextEditingController nomController = TextEditingController();
-  final TextEditingController introductionController = TextEditingController(); // 🔥 Nouveau
+  final TextEditingController introductionController = TextEditingController();
   final TextEditingController descriptionsController = TextEditingController();
   final TextEditingController imageController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
 
   Uint8List? _imageBytes;
 
+  static const String _uploadApiUrl = 'https://numedu.onrender.com/api/images/';
+
   @override
   void dispose() {
     nomController.dispose();
-    introductionController.dispose(); // 🔥
+    introductionController.dispose();
     descriptionsController.dispose();
     imageController.dispose();
     searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png'],
+      withData: true,
+    );
+    if (result != null && result.files.single.bytes != null) {
+      setState(() {
+        imageController.text = result.files.single.name;
+        _imageBytes = result.files.single.bytes;
+      });
+    }
+  }
+
+  Future<String?> _uploadImageToApi({
+    required Uint8List bytes,
+    required String filename,
+  }) async {
+    try {
+      final uri = Uri.parse(_uploadApiUrl);
+      final request = http.MultipartRequest('POST', uri);
+      request.files.add(http.MultipartFile.fromBytes('image', bytes, filename: filename));
+      final streamed = await request.send();
+      final body = await streamed.stream.bytesToString();
+
+      if (streamed.statusCode >= 200 && streamed.statusCode < 300) {
+        final json = jsonDecode(body) as Map<String, dynamic>;
+        return (json['url'] ?? json['image'] ?? json['file'])?.toString();
+      } else {
+        debugPrint('Upload échoué (${streamed.statusCode}): $body');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('Erreur upload: $e');
+      return null;
+    }
+  }
+
+  Future<void> _submitFormation(BuildContext context) async {
+    final title = nomController.text.trim();
+    final introduction = introductionController.text.trim();
+    final descriptions = descriptionsController.text.trim();
+
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Le titre est obligatoire.')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    String imageUrl = '';
+    if (_imageBytes != null && imageController.text.isNotEmpty) {
+      final url = await _uploadImageToApi(bytes: _imageBytes!, filename: imageController.text);
+      if (url == null || url.isEmpty) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Échec de l'upload de l'image.")),
+        );
+        return;
+      }
+      imageUrl = url;
+    }
+
+    try {
+      final col = FirebaseFirestore.instance.collection('formations');
+      final docRef = col.doc();
+      final data = {
+        'formationID': docRef.id,
+        'title': title,
+        'introduction': introduction,
+        'descriptions': descriptions,
+        'add_date': FieldValue.serverTimestamp(),
+        'image': imageUrl,
+        'formationModuleID': <String>[],
+        'published': false,
+      };
+      await docRef.set(data);
+
+      nomController.clear();
+      introductionController.clear();
+      descriptionsController.clear();
+      imageController.clear();
+      _imageBytes = null;
+
+      Navigator.of(context).pop();
+      Navigator.of(context).pop();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Formation ajoutée avec succès.')),
+      );
+    } catch (e) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur Firestore: $e')),
+      );
+    }
   }
 
   Future<void> _deleteFormation(String formationId) async {
@@ -51,7 +159,9 @@ class _FormationsPageState extends State<FormationsPage> {
           .update({'published': !currentStatus});
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(!currentStatus ? 'Formation publiée avec succès.' : 'Formation dépubliée.'),
+          content: Text(!currentStatus
+              ? 'Formation publiée avec succès.'
+              : 'Formation dépubliée.'),
         ),
       );
     } catch (e) {
@@ -74,59 +184,6 @@ class _FormationsPageState extends State<FormationsPage> {
     }
   }
 
-  Future<void> _submitFormation(BuildContext context) async {
-    final title = nomController.text.trim();
-    final introduction = introductionController.text.trim(); // 🔥
-    final descriptions = descriptionsController.text.trim();
-
-    if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Le titre est obligatoire.')),
-      );
-      return;
-    }
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      final col = FirebaseFirestore.instance.collection('formations');
-      final docRef = col.doc();
-      final data = {
-        'formationID': docRef.id,
-        'title': title,
-        'introduction': introduction, // 🔥
-        'descriptions': descriptions,
-        'add_date': FieldValue.serverTimestamp(),
-        'image': '',
-        'formationModuleID': <String>[],
-        'published': false,
-      };
-      await docRef.set(data);
-
-      nomController.clear();
-      introductionController.clear(); // 🔥
-      descriptionsController.clear();
-      imageController.clear();
-      _imageBytes = null;
-
-      Navigator.of(context).pop();
-      Navigator.of(context).pop();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Formation ajoutée avec succès.')),
-      );
-    } catch (e) {
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur Firestore: $e')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -138,7 +195,11 @@ class _FormationsPageState extends State<FormationsPage> {
           const SizedBox(height: 20),
           Text(
             "Formations",
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.grey[800]),
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
+            ),
           ),
           const SizedBox(height: 50),
           Row(
@@ -152,8 +213,10 @@ class _FormationsPageState extends State<FormationsPage> {
                   decoration: InputDecoration(
                     hintText: 'Rechercher une formation...',
                     prefixIcon: const Icon(Icons.search, size: 20),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 5),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                    contentPadding:
+                        const EdgeInsets.symmetric(vertical: 0, horizontal: 5),
                   ),
                   style: const TextStyle(fontSize: 14),
                   onChanged: (_) => setState(() {}),
@@ -165,17 +228,17 @@ class _FormationsPageState extends State<FormationsPage> {
                     context: context,
                     builder: (_) => FormationForm(
                       nomController: nomController,
-                      introductionController: introductionController, // 🔥 Obligatoire
+                      introductionController: introductionController,
                       descriptionsController: descriptionsController,
                       imageController: imageController,
-                      onPickImage: () async {},
+                      onPickImage: _pickImage,
                       onSubmit: _submitFormation,
                       imageBytes: _imageBytes,
                     ),
                   );
                 },
                 icon: const Icon(Icons.add, color: Colors.white),
-                label: const Text("Ajouter une formation"),
+                label: const Text("Ajouter formation"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF23468E),
                   foregroundColor: Colors.white,
@@ -189,23 +252,27 @@ class _FormationsPageState extends State<FormationsPage> {
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                return StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance.collection('formations').orderBy('add_date', descending: true).snapshots(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                return SingleChildScrollView(
+                  child: SizedBox(
+                    width: constraints.maxWidth, // prend toute la largeur
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('formations')
+                          .orderBy('add_date', descending: true)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
 
-                    final filteredFormations = snapshot.data!.docs.where((doc) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      final title = data['title']?.toString().toLowerCase() ?? '';
-                      final search = searchController.text.toLowerCase();
-                      return title.contains(search);
-                    }).toList();
+                        final filteredFormations = snapshot.data!.docs.where((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final title = data['title']?.toString().toLowerCase() ?? '';
+                          final search = searchController.text.toLowerCase();
+                          return title.contains(search);
+                        }).toList();
 
-                    return SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                        child: DataTable(
+                        return DataTable(
                           headingRowColor: MaterialStateProperty.all(const Color(0xFF23468E)),
                           headingTextStyle: const TextStyle(color: Colors.white),
                           columnSpacing: 20,
@@ -222,108 +289,84 @@ class _FormationsPageState extends State<FormationsPage> {
                           rows: filteredFormations.isNotEmpty
                               ? filteredFormations.map((doc) {
                                   final data = doc.data() as Map<String, dynamic>;
-                                  return DataRow(cells: [
-                                    DataCell(Text(data['formationID'] ?? '', overflow: TextOverflow.ellipsis)),
-                                    DataCell(SizedBox(width: 150, child: Text(data['title'] ?? '', overflow: TextOverflow.ellipsis))),
-                                    DataCell(SizedBox(width: 250, child: Text(data['descriptions'] ?? '', overflow: TextOverflow.ellipsis))),
-                                    DataCell(Text(
-                                      data['add_date'] != null ? (data['add_date'] as Timestamp).toDate().toString().split(' ')[0] : '',
-                                      overflow: TextOverflow.ellipsis,
-                                    )),
-                                    DataCell(Text(((data['formationModuleID'] as List<dynamic>?)?.length ?? 0).toString(), overflow: TextOverflow.ellipsis)),
-                                    DataCell(FutureBuilder<int>(
-                                      future: _getSubscribersCount(data['formationID']),
-                                      builder: (context, snapshot) {
-                                        if (snapshot.connectionState == ConnectionState.waiting) {
-                                          return const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2));
-                                        }
-                                        if (snapshot.hasError) return const Text("Erreur");
-                                        return Text(snapshot.data.toString());
-                                      },
-                                    )),
-                                    DataCell(Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: (data['published'] as bool? ?? false) ? Colors.green : Colors.red,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        (data['published'] as bool? ?? false) ? 'Publiée' : 'Non publiée',
-                                        style: const TextStyle(color: Colors.white, fontSize: 12),
-                                      ),
-                                    )),
-                                    DataCell(
-                                      Center(
-                                        child: PopupMenuButton<String>(
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                          elevation: 4,
-                                          onSelected: (value) {
-                                            if (value == 'modifier') {
-                                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Modifier action')));
-                                            } else if (value == 'supprimer') {
-                                              showDialog(
-                                                context: context,
-                                                builder: (context) => AlertDialog(
-                                                  title: const Text("Confirmation"),
-                                                  content: const Text("Voulez-vous vraiment supprimer cette formation ?"),
-                                                  actions: [
-                                                    TextButton(
-                                                      onPressed: () => Navigator.of(context).pop(),
-                                                      child: const Text("Annuler"),
-                                                    ),
-                                                    ElevatedButton(
-                                                      onPressed: () {
-                                                        Navigator.of(context).pop();
-                                                        _deleteFormation(data['formationID']);
-                                                      },
-                                                      style: ElevatedButton.styleFrom(
-                                                        backgroundColor: Colors.red,
-                                                        foregroundColor: Colors.white,
-                                                      ),
-                                                      child: const Text("Supprimer"),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            } else if (value == 'publier') {
-                                              _togglePublish(data['formationID'], data['published'] as bool? ?? false);
-                                            }
-                                          },
-                                          itemBuilder: (context) => [
-                                            const PopupMenuItem(
-                                              value: 'modifier',
-                                              height: 32,
-                                              child: Text("Modifier", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                                            ),
-                                            const PopupMenuItem(
-                                              value: 'supprimer',
-                                              height: 32,
-                                              child: Text("Supprimer", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                                            ),
-                                            PopupMenuItem(
-                                              value: 'publier',
-                                              height: 32,
-                                              child: Text(
-                                                (data['published'] as bool? ?? false) ? "Dépublier" : "Publier",
-                                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                                              ),
-                                            ),
-                                            const PopupMenuItem(
-                                              height: 32,
-                                              child: Text("Ajouter un module", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                                            ),
-                                          ],
-                                          child: const Icon(Icons.more_vert),
+                                  return DataRow(
+                                    cells: [
+                                      DataCell(Text(data['formationID'] ?? '', overflow: TextOverflow.ellipsis)),
+                                      DataCell(SizedBox(width: 150, child: Text(data['title'] ?? '', overflow: TextOverflow.ellipsis))),
+                                      DataCell(SizedBox(width: 250, child: Text(data['descriptions'] ?? '', overflow: TextOverflow.ellipsis))),
+                                      DataCell(Text(data['add_date'] != null
+                                          ? (data['add_date'] as Timestamp).toDate().toString().split(' ')[0]
+                                          : '', overflow: TextOverflow.ellipsis)),
+                                      DataCell(Text(((data['formationModuleID'] as List<dynamic>?)?.length ?? 0).toString())),
+                                      DataCell(FutureBuilder<int>(
+                                        future: _getSubscribersCount(data['formationID']),
+                                        builder: (context, snapshot) {
+                                          if (snapshot.connectionState == ConnectionState.waiting) {
+                                            return const SizedBox(
+                                              width: 15,
+                                              height: 15,
+                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                            );
+                                          }
+                                          if (snapshot.hasError) return const Text("Erreur");
+                                          return Text(snapshot.data.toString());
+                                        },
+                                      )),
+                                      DataCell(Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: (data['published'] as bool? ?? false) ? Colors.green : Colors.red,
+                                          borderRadius: BorderRadius.circular(12),
                                         ),
-                                      ),
-                                    ),
-                                  ]);
+                                        child: Text(
+                                          (data['published'] as bool? ?? false) ? 'Publiée' : 'Non publiée',
+                                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                                        ),
+                                      )),
+                                      DataCell(PopupMenuButton<String>(
+                                        onSelected: (value) {
+                                          if (value == 'modifier') {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Modifier action')),
+                                            );
+                                          } else if (value == 'supprimer') {
+                                            showDialog(
+                                              context: context,
+                                              builder: (context) => AlertDialog(
+                                                title: const Text("Confirmation"),
+                                                content: const Text("Voulez-vous vraiment supprimer cette formation ?"),
+                                                actions: [
+                                                  TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text("Annuler")),
+                                                  ElevatedButton(
+                                                    onPressed: () {
+                                                      Navigator.of(context).pop();
+                                                      _deleteFormation(data['formationID']);
+                                                    },
+                                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                                                    child: const Text("Supprimer"),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          } else if (value == 'publier') {
+                                            _togglePublish(data['formationID'], data['published'] as bool? ?? false);
+                                          }
+                                        },
+                                        itemBuilder: (context) => [
+                                          const PopupMenuItem(value: 'modifier', child: Text("Modifier")),
+                                          const PopupMenuItem(value: 'supprimer', child: Text("Supprimer")),
+                                          PopupMenuItem(value: 'publier', child: Text((data['published'] as bool? ?? false) ? "Dépublier" : "Publier")),
+                                        ],
+                                        child: const Icon(Icons.more_vert),
+                                      )),
+                                    ],
+                                  );
                                 }).toList()
                               : [DataRow(cells: List.generate(8, (index) => const DataCell(Text('-'))))],
-                        ),
-                      ),
-                    );
-                  },
+                        );
+                      },
+                    ),
+                  ),
                 );
               },
             ),
