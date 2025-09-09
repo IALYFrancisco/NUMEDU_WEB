@@ -169,7 +169,7 @@ class _FormationsPageState extends State<FormationsPage> {
                   );
                 },
                 icon: const Icon(Icons.add, color: Colors.white),
-                label: const Text("Ajouter formation"),
+                label: const Text("Ajouter une formation"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF23468E),
                   foregroundColor: Colors.white,
@@ -302,6 +302,10 @@ class _FormationsPageState extends State<FormationsPage> {
                                                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                                               ),
                                             ),
+                                            const PopupMenuItem(
+                                                height: 32,
+                                                child: Text("Ajouter un module", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                                              ),
                                           ],
                                           child: const Icon(Icons.more_vert),
                                         ),
