@@ -1,12 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class Formation {
   String formationId;
   String title;
   String description;
   String introduction;
   String image;
-  List<String> formationModuleIds;
+  List<String> formationModuleIds; // IDs des modules liés
   bool published;
   DateTime? addDate;
 
@@ -21,7 +19,6 @@ class Formation {
     this.addDate,
   });
 
-  /// Crée une instance Formation à partir d'un Map (Firestore)
   factory Formation.fromJson(Map<String, dynamic> json) {
     return Formation(
       formationId: json['formationId'] ?? '',
@@ -39,7 +36,6 @@ class Formation {
     );
   }
 
-  /// Convertit l'instance Formation en Map pour Firestore
   Map<String, dynamic> toJson() {
     return {
       'formationId': formationId,
@@ -49,7 +45,7 @@ class Formation {
       'image': image,
       'formationModuleIds': formationModuleIds,
       'published': published,
-      'addDate': FieldValue.serverTimestamp(), // Firestore gère la date
+      'addDate': addDate != null ? Timestamp.fromDate(addDate!) : FieldValue.serverTimestamp(),
     };
   }
 }
