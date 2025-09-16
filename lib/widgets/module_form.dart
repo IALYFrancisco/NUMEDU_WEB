@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_quill/flutter_quill.dart' as quill;
+import 'package:flutter_quill/flutter_quill.dart';
 import '../models/formation_module.dart';
 
 class ModuleForm extends StatefulWidget {
@@ -15,8 +15,8 @@ class ModuleForm extends StatefulWidget {
 
 class _ModuleFormState extends State<ModuleForm> {
   final TextEditingController titleController = TextEditingController();
-  final quill.QuillController quillController = quill.QuillController(
-    document: quill.Document(),
+  final QuillController quillController = QuillController(
+    document: Document(),
     selection: const TextSelection.collapsed(offset: 0),
   );
 
@@ -44,10 +44,8 @@ class _ModuleFormState extends State<ModuleForm> {
         contents: jsonEncode(quillController.document.toDelta().toJson()),
       );
 
-      // Enregistrer le module dans Firestore
       await docRef.set(module.toJson());
 
-      // Ajouter l'ID du module à la formation correspondante
       final formationRef = FirebaseFirestore.instance
           .collection('formations')
           .doc(widget.formationId);
@@ -85,18 +83,17 @@ class _ModuleFormState extends State<ModuleForm> {
                     const InputDecoration(labelText: "Titre du module"),
               ),
               const SizedBox(height: 10),
-              SizedBox(
-                height: 200,
-                child: quill.QuillEditor.basic(
-                  controller: quillController,
-                  readOnly: false,
-                ),
+              QuillSimpleToolbar(
+                controller: quillController,
+                config: const QuillSimpleToolbarConfig(),
               ),
               const SizedBox(height: 10),
-              quill.QuillToolbar.basic(
-                controller: quillController,
-                onImagePickCallback: null,
-                onVideoPickCallback: null,
+              SizedBox(
+                height: 300,
+                child: QuillEditor.basic(
+                  controller: quillController,
+                  config: const QuillEditorConfig(),
+                ),
               ),
             ],
           ),
