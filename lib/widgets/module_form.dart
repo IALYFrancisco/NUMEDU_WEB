@@ -15,7 +15,10 @@ class ModuleForm extends StatefulWidget {
 
 class _ModuleFormState extends State<ModuleForm> {
   final TextEditingController titleController = TextEditingController();
-  final quill.QuillController quillController = quill.QuillController.basic();
+  final quill.QuillController quillController = quill.QuillController(
+    document: quill.Document(),
+    selection: const TextSelection.collapsed(offset: 0),
+  );
 
   bool isSubmitting = false;
 
@@ -32,7 +35,9 @@ class _ModuleFormState extends State<ModuleForm> {
     setState(() => isSubmitting = true);
 
     try {
-      final docRef = FirebaseFirestore.instance.collection('formationModules').doc();
+      final docRef =
+          FirebaseFirestore.instance.collection('formationModules').doc();
+
       final module = FormationModule(
         formationModuleId: docRef.id,
         title: titleController.text.trim(),
@@ -43,12 +48,14 @@ class _ModuleFormState extends State<ModuleForm> {
       await docRef.set(module.toJson());
 
       // Ajouter l'ID du module à la formation correspondante
-      final formationRef = FirebaseFirestore.instance.collection('formations').doc(widget.formationId);
+      final formationRef = FirebaseFirestore.instance
+          .collection('formations')
+          .doc(widget.formationId);
+
       await formationRef.update({
         'formationModuleIds': FieldValue.arrayUnion([docRef.id]),
       });
 
-      // Feedback utilisateur
       setState(() => isSubmitting = false);
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -57,7 +64,7 @@ class _ModuleFormState extends State<ModuleForm> {
     } catch (e) {
       setState(() => isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de l\'ajout du module : $e')),
+        SnackBar(content: Text("Erreur lors de l'ajout du module : $e")),
       );
     }
   }
@@ -74,7 +81,8 @@ class _ModuleFormState extends State<ModuleForm> {
             children: [
               TextField(
                 controller: titleController,
-                decoration: const InputDecoration(labelText: "Titre du module"),
+                decoration:
+                    const InputDecoration(labelText: "Titre du module"),
               ),
               const SizedBox(height: 10),
               SizedBox(
@@ -87,8 +95,8 @@ class _ModuleFormState extends State<ModuleForm> {
               const SizedBox(height: 10),
               quill.QuillToolbar.basic(
                 controller: quillController,
-                onImagePickCallback: (_) async {}, // callback vide pour Web/Mobile
-                onVideoPickCallback: (_) async {},
+                onImagePickCallback: null,
+                onVideoPickCallback: null,
               ),
             ],
           ),
