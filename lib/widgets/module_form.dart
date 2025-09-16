@@ -89,14 +89,27 @@ class _ModuleFormState extends State<ModuleForm> {
                 height: 200,
                 child: quill.QuillEditor.basic(
                   controller: quillController,
-                  readOnly: false,
+                  configurations: const quill.QuillEditorConfigurations(
+                    placeholder: 'Écrivez le contenu du module...',
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
-              quill.QuillToolbar.basic(
-                controller: quillController,
-                onImagePickCallback: null,
-                onVideoPickCallback: null,
+              quill.QuillToolbar.simple(
+                configurations: quill.QuillToolbarConfigurations(
+                  controller: quillController,
+                  multiRowsDisplay: false,
+                  showFontFamily: false,
+                  showFontSize: false,
+                  showInlineCode: false,
+                  showListCheck: false,
+                  showQuote: false,
+                  showSearchButton: false,
+                  embedButtons: quill.FlutterQuillEmbeds.buttons(
+                    onImagePickCallback: (_) async {},
+                    onVideoPickCallback: (_) async {},
+                  ),
+                ),
               ),
             ],
           ),
