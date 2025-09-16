@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import '../models/formation_module.dart';
-import 'package:file_selector/file_selector.dart';
 
 class ModuleForm extends StatefulWidget {
   final String formationId;
@@ -68,24 +67,12 @@ class _ModuleFormState extends State<ModuleForm> {
     }
   }
 
-  Future<String?> _pickFile() async {
-    final typeGroup = XTypeGroup(
-      label: 'media',
-      extensions: ['jpg', 'png', 'jpeg', 'mp4', 'mov', 'avi'],
-    );
-    final file = await openFile(acceptedTypeGroups: [typeGroup]);
-    if (file != null) {
-      return file.path;
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text("Ajouter un module"),
       content: SizedBox(
-        width: 600,
+        width: 400,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -95,29 +82,17 @@ class _ModuleFormState extends State<ModuleForm> {
                 decoration:
                     const InputDecoration(labelText: "Titre du module"),
               ),
-              const SizedBox(height: 20),
-              // Toolbar pour le Web
-              QuillToolbar.basic(
+              const SizedBox(height: 10),
+              QuillSimpleToolbar(
                 controller: quillController,
-                onImagePickCallback: _pickFile,
-                onVideoPickCallback: _pickFile,
+                config: const QuillSimpleToolbarConfig(),
               ),
               const SizedBox(height: 10),
-              Container(
+              SizedBox(
                 height: 300,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: QuillEditor(
+                child: QuillEditor.basic(
                   controller: quillController,
-                  focusNode: FocusNode(),
-                  scrollController: ScrollController(),
-                  scrollable: true,
-                  autoFocus: false,
-                  readOnly: false,
-                  expands: false,
-                  padding: const EdgeInsets.all(8),
+                  config: const QuillEditorConfig(),
                 ),
               ),
             ],
