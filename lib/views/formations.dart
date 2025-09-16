@@ -1,13 +1,13 @@
 import 'dart:typed_data';
 import 'dart:convert';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_selector/file_selector.dart'; // <-- Remplacé file_picker
 import '../widgets/formation_form.dart';
 import '../widgets/module_form.dart';
 import '../models/formation.dart';
-import '../models/formation_module.dart'; // <-- Import du modèle module
+import '../models/formation_module.dart';
 
 class FormationsPage extends StatefulWidget {
   const FormationsPage({super.key});
@@ -36,16 +36,16 @@ class _FormationsPageState extends State<FormationsPage> {
     super.dispose();
   }
 
+  /// Nouvelle méthode Web compatible pour sélectionner un fichier
   Future<void> _pickImage() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['jpg', 'jpeg', 'png'],
-      withData: true,
-    );
-    if (result != null && result.files.single.bytes != null) {
+    final XTypeGroup typeGroup = XTypeGroup(label: 'images', extensions: ['jpg', 'jpeg', 'png']);
+    final XFile? file = await openFile(acceptedTypeGroups: [typeGroup]);
+
+    if (file != null) {
+      final bytes = await file.readAsBytes();
       setState(() {
-        imageController.text = result.files.single.name;
-        _imageBytes = result.files.single.bytes;
+        _imageBytes = bytes;
+        imageController.text = file.name;
       });
     }
   }
@@ -62,8 +62,8 @@ class _FormationsPageState extends State<FormationsPage> {
       final body = await streamed.stream.bytesToString();
 
       if (streamed.statusCode >= 200 && streamed.statusCode < 300) {
-        final json = jsonDecode(body) as Map<String, dynamic>;
-        return (json['url'] ?? json['image'] ?? json['file'])?.toString();
+        final jsonMap = jsonDecode(body) as Map<String, dynamic>;
+        return (jsonMap['url'] ?? jsonMap['image'] ?? jsonMap['file'])?.toString();
       } else {
         debugPrint('Upload échoué (${streamed.statusCode}): $body');
         return null;
@@ -127,8 +127,8 @@ class _FormationsPageState extends State<FormationsPage> {
       imageController.clear();
       _imageBytes = null;
 
-      Navigator.of(context).pop();
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(); // Fermer le loader
+      Navigator.of(context).pop(); // Fermer le formulaire
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Formation ajoutée avec succès.')),
@@ -354,7 +354,6 @@ class _FormationsPageState extends State<FormationsPage> {
                                           } else if (value == 'publier') {
                                             _togglePublish(f.formationId, f.published);
                                           } else if (value == 'ajouter_module') {
-                                            // **Affiche le formulaire module avec WYSIWYG**
                                             showDialog(
                                               context: context,
                                               builder: (_) => ModuleForm(
