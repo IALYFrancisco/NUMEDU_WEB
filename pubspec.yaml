@@ -45,7 +45,7 @@ dependencies:
   flutter_dotenv: ^5.1.0
 
   # Editeur de texte riche
-  flutter_quill: ^6.1.0
+  flutter_quill: 11.4.2
 
   # Sélection de fichiers (image, vidéo, doc) compatible Web/Desktop
   file_picker: ^8.0.0
